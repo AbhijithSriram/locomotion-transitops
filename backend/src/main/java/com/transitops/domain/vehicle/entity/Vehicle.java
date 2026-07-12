@@ -24,7 +24,19 @@ import lombok.Setter;
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-public class Vehicle {
+public class Vehicle implements org.springframework.data.domain.Persistable<String> {
+
+    @jakarta.persistence.Transient
+    private boolean isNewEntry = false;
+
+    public void setNewEntry(boolean isNewEntry) {
+        this.isNewEntry = isNewEntry;
+    }
+
+    @Override
+    public boolean isNew() {
+        return isNewEntry;
+    }
 
     @Id
     private String id;
