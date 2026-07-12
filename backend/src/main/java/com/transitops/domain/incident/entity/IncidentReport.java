@@ -1,4 +1,4 @@
-package com.transitops.domain.maintenance.entity;
+package com.transitops.domain.incident.entity;
 
 import com.transitops.common.entity.AssignedIdEntity;
 import jakarta.persistence.Entity;
@@ -12,22 +12,16 @@ import lombok.experimental.SuperBuilder;
 import java.time.Instant;
 
 @Entity
-@Table(name = "maintenance_logs")
+@Table(name = "incident_reports")
 @Getter
 @Setter
 @NoArgsConstructor
 @AllArgsConstructor
 @SuperBuilder
-public class MaintenanceLog extends AssignedIdEntity {
-
+public class IncidentReport extends AssignedIdEntity {
     private String vehicleId;
-    private String type;
-
-    // "active" | "closed"
-    private String status;
-
-    private double cost;
-
-    private Instant createdAt;
-    private Instant closedAt;
+    private String driverId;
+    private String tripId;
+    private String description;
+    private Instant reportedAt;
 }

@@ -23,6 +23,7 @@ import org.springframework.stereotype.Service;
 
 import jakarta.annotation.PostConstruct;
 import java.time.Instant;
+import java.time.LocalDate;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.Executors;
@@ -46,17 +47,6 @@ public class SimulationService {
     private int speedMultiplier = 1;
     private final Map<String, SimulatedTrip> activeTrips = new ConcurrentHashMap<>();
     private final ScheduledExecutorService rescueScheduler = Executors.newScheduledThreadPool(1);
-
-    private static final Map<String, double[]> DEPOT_COORDS = Map.of(
-        "Gandhinagar Depot", new double[]{23.2156, 72.6369},
-        "Ahmedabad Hub", new double[]{23.0225, 72.5714},
-        "Vatva Industrial Area", new double[]{22.9676, 72.6469},
-        "Sanand Warehouse", new double[]{22.9922, 72.3822},
-        "Kalol Depot", new double[]{23.2422, 72.4946},
-        "Mansa Yard", new double[]{23.4256, 72.6567},
-        "Chennai Depot", new double[]{13.0827, 80.2707},
-        "Bangalore Hub", new double[]{12.9716, 77.5946}
-    );
 
     @Data
     @Builder
@@ -100,19 +90,17 @@ public class SimulationService {
     }
 
     public void registerTrip(Trip trip, double initialProgress) {
-        double[] src = DEPOT_COORDS.getOrDefault(trip.getSource(), new double[]{23.2156, 72.6369});
-        double[] dest = DEPOT_COORDS.getOrDefault(trip.getDestination(), new double[]{23.0225, 72.5714});
-        double heading = calculateHeading(src[0], src[1], dest[0], dest[1]);
+        double heading = calculateHeading(trip.getSourceLat(), trip.getSourceLng(), trip.getDestinationLat(), trip.getDestinationLng());
         SimulatedTrip sim = SimulatedTrip.builder()
                 .tripId(trip.getId())
                 .vehicleId(trip.getVehicleId())
                 .driverId(trip.getDriverId())
-                .sourceName(trip.getSource())
-                .sourceLat(src[0])
-                .sourceLng(src[1])
-                .destName(trip.getDestination())
-                .destLat(dest[0])
-                .destLng(dest[1])
+                .sourceName(trip.getSourceName())
+                .sourceLat(trip.getSourceLat())
+                .sourceLng(trip.getSourceLng())
+                .destName(trip.getDestinationName())
+                .destLat(trip.getDestinationLat())
+                .destLng(trip.getDestinationLng())
                 .progress(initialProgress)
                 .durationTicks(120 + new Random().nextInt(60)) // ~2 mins trip
                 .speedKmh(60.0 + new Random().nextDouble() * 20.0)
@@ -299,7 +287,7 @@ public class SimulationService {
             Map<String, Object> alert = new HashMap<>();
             alert.put("type", "TRIP_COMPLETED");
             alert.put("severity", "INFO");
-            alert.put("message", vehicle.getRegNumber() + " completed " + trip.getSource() + " -> " + trip.getDestination());
+            alert.put("message", vehicle.getRegNumber() + " completed " + trip.getSourceName() + " -> " + trip.getDestinationName());
             alert.put("vehicleId", vehicle.getId());
             alert.put("tripId", trip.getId());
             alert.put("ts", ts);
@@ -375,7 +363,7 @@ public class SimulationService {
             Map<String, Object> alert = new HashMap<>();
             alert.put("type", "BREAKDOWN");
             alert.put("severity", "CRITICAL");
-            alert.put("message", vehicle.getRegNumber() + " broke down en route to " + trip.getDestination());
+            alert.put("message", vehicle.getRegNumber() + " broke down en route to " + trip.getDestinationName());
             alert.put("vehicleId", vehicle.getId());
             alert.put("tripId", trip.getId());
             alert.put("ts", ts);
@@ -429,16 +417,20 @@ public class SimulationService {
                 rescueDriver.setStatus(DriverStatus.ON_TRIP);
                 driverRepository.save(rescueDriver);
 
-                double[] brokenDest = DEPOT_COORDS.getOrDefault(brokenTrip.getDestination(), new double[]{23.0225, 72.5714});
+                // Create a new trip for rescue from current breakdown location to original destination
                 Trip rescueTrip = Trip.builder()
                         .id(UUID.randomUUID().toString())
-                        .source("Breakdown Point (" + rescueVehicle.getRegNumber() + ")")
-                        .destination(brokenTrip.getDestination())
+                        .sourceName("Breakdown Point (" + rescueVehicle.getRegNumber() + ")")
+                        .sourceLat(lat)
+                        .sourceLng(lng)
+                        .destinationName(brokenTrip.getDestinationName())
+                        .destinationLat(brokenTrip.getDestinationLat())
+                        .destinationLng(brokenTrip.getDestinationLng())
                         .vehicleId(rescueVehicle.getId())
                         .driverId(rescueDriver.getId())
                         .cargoWeightKg(brokenTrip.getCargoWeightKg())
                         .status(TripStatus.DISPATCHED)
-                        .routePolyline(routeService.getRoutePolyline(lat, lng, brokenDest[0], brokenDest[1]))
+                        .routePolyline(routeService.getRoutePolyline(lat, lng, brokenTrip.getDestinationLat(), brokenTrip.getDestinationLng()))
                         .createdAt(Instant.now())
                         .dispatchedAt(Instant.now())
                         .build();
@@ -524,8 +516,12 @@ public class SimulationService {
 
         Trip trip = Trip.builder()
                 .id(UUID.randomUUID().toString())
-                .source(names[startIdx])
-                .destination(names[destIdx])
+                .sourceName(names[startIdx])
+                .sourceLat(points[startIdx][0])
+                .sourceLng(points[startIdx][1])
+                .destinationName(names[destIdx])
+                .destinationLat(points[destIdx][0])
+                .destinationLng(points[destIdx][1])
                 .vehicleId(v.getId())
                 .driverId(d.getId())
                 .cargoWeightKg(100.0 + new Random().nextInt(500))

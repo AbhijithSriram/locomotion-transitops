@@ -1,8 +1,16 @@
 package com.transitops.domain.finance.entity;
 
+import com.transitops.common.entity.AssignedIdEntity;
 import com.transitops.common.enums.ExpenseCategory;
-import jakarta.persistence.*;
-import lombok.*;
+import jakarta.persistence.Entity;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
+import jakarta.persistence.Table;
+import lombok.AllArgsConstructor;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
+import lombok.experimental.SuperBuilder;
 
 import java.time.Instant;
 
@@ -12,24 +20,15 @@ import java.time.Instant;
 @Setter
 @NoArgsConstructor
 @AllArgsConstructor
-@Builder
-public class Expense {
-
-    @Id
-    private String id;
-
+@SuperBuilder
+public class Expense extends AssignedIdEntity {
     private String vehicleId;
-
     private String tripId;
 
     @Enumerated(EnumType.STRING)
-    @Column(nullable = false)
     private ExpenseCategory category;
 
     private double amount;
-
     private String description;
-
-    @Column(nullable = false)
     private Instant incurredAt;
 }
