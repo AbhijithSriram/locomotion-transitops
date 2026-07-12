@@ -19,7 +19,7 @@ registerRoutes([
   { path: 'trips', label: 'Trips', icon: 'trips', roles: ['FLEET_MANAGER'], render: renderTrips },
   { path: 'maintenance', label: 'Maintenance', icon: 'maintenance', roles: ['FLEET_MANAGER', 'SAFETY_OFFICER'], render: renderMaintenance },
   { path: 'fuel', label: 'Fuel & Expenses', icon: 'fuel', roles: ['FLEET_MANAGER', 'FINANCIAL_ANALYST'], render: renderFuel },
-  { path: 'analytics', label: 'Analytics', icon: 'analytics', roles: ['FLEET_MANAGER', 'FINANCIAL_ANALYST'], render: renderAnalytics },
+  { path: 'analytics', label: 'Reports', icon: 'analytics', roles: ['FLEET_MANAGER', 'FINANCIAL_ANALYST'], render: renderAnalytics },
   { path: 'settings', label: 'Settings', icon: 'settings', roles: ['FLEET_MANAGER'], render: renderSettings },
 ]);
 

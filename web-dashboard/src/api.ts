@@ -316,7 +316,17 @@ const realApi: Api = {
   createExpense: async (e) => mapExpense(await http<any>('/expenses', { method: 'POST', body: JSON.stringify(e) })),
   getReportSummary: async () => {
     try {
-      return await http<ReportSummary>('/reports/summary');
+      const raw = await http<any>('/reports/summary');
+      return {
+        totalVehicles: raw.totalVehicles || 0,
+        activeTrips: (raw.tripsByStatus?.['DISPATCHED'] || 0) + (raw.tripsByStatus?.['IN_PROGRESS'] || 0),
+        completedTrips: raw.tripsByStatus?.['COMPLETED'] || 0,
+        totalFuelCost: raw.totalFuelCost || 0,
+        totalMaintenanceCost: raw.totalMaintenanceCost || 0,
+        totalExpenses: raw.totalExpenseCost || 0,
+        avgFuelEfficiencyKmPerL: 0,
+        fleetUtilizationPct: raw.totalVehicles ? Math.round(((raw.vehiclesByStatus?.['ON_TRIP'] || 0) / raw.totalVehicles) * 100) : 0,
+      };
     } catch (err) {
       if (!notFound(err)) throw err;
       // No reports endpoint yet — compute what we can from vehicles + trips.
