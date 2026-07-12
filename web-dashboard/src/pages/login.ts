@@ -29,10 +29,10 @@ export function renderLogin(): void {
         <p class="muted">Enter your credentials to continue</p>
         <form id="login-form">
           <label>Email
-            <input type="email" name="email" placeholder="you@locomotion.io" required value="manager@locomotion.io" />
+            <input type="email" name="email" placeholder="you@transitops.com" required value="${USE_MOCK ? 'manager@locomotion.io' : ''}" />
           </label>
           <label>Password
-            <input type="password" name="password" placeholder="••••••••" required value="demo" />
+            <input type="password" name="password" placeholder="••••••••" required value="${USE_MOCK ? 'demo' : ''}" />
           </label>
           <div class="form-error" id="login-error" hidden></div>
           <button class="btn btn-primary" type="submit">Sign In</button>
