@@ -12,6 +12,11 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import java.util.UUID
+import androidx.work.Constraints
+import androidx.work.NetworkType
+import androidx.work.OneTimeWorkRequestBuilder
+import androidx.work.WorkManager
+import com.transitops.driver.data.sync.SyncWorker
 
 class TripViewModel(application: Application) : AndroidViewModel(application) {
 
@@ -63,8 +68,6 @@ class TripViewModel(application: Application) : AndroidViewModel(application) {
             """.trimIndent()
             
             insertOutboxAction(OutboxActionType.TRIP_COMPLETE, payload)
-            
-            // In a real app we would also trigger the SyncWorker here
         }
     }
 
@@ -76,5 +79,19 @@ class TripViewModel(application: Application) : AndroidViewModel(application) {
             createdAt = System.currentTimeMillis()
         )
         db.outboxDao().insertAction(action)
+        
+        val syncRequest = OneTimeWorkRequestBuilder<SyncWorker>()
+            .setConstraints(
+                Constraints.Builder()
+                    .setRequiredNetworkType(NetworkType.CONNECTED)
+                    .build()
+            )
+            .build()
+            
+        WorkManager.getInstance(getApplication()).enqueueUniqueWork(
+            "immediate_sync",
+            androidx.work.ExistingWorkPolicy.REPLACE,
+            syncRequest
+        )
     }
 }
