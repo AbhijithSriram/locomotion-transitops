@@ -76,7 +76,6 @@ Request: `{ "refreshToken": "eyJ..." }` → Response `200`: **same shape as logi
 ```json
 {
   "id": "veh-5",
-  "name": "VAN-05",
   "regNumber": "TN-01-AB-1234",
   "type": "VAN",
   "maxLoadKg": 2000,
@@ -112,8 +111,6 @@ Request: `{ "refreshToken": "eyJ..." }` → Response `200`: **same shape as logi
   "cargoWeightKg": 1200,
   "status": "DISPATCHED",
   "routePolyline": "gfo}EtohhU...",
-  "distanceKm": 348.2,
-  "revenueAmount": null,
   "createdAt": 1752299000000,
   "dispatchedAt": 1752300000000,
   "completedAt": null
@@ -122,10 +119,6 @@ Request: `{ "refreshToken": "eyJ..." }` → Response `200`: **same shape as logi
 - `routePolyline`: Google **encoded polyline (precision 5)**, or `null` before dispatch.
   The simulation engine fetches and stores it at dispatch time; the fallback (no Google
   key) encodes a straight source→destination line in the same format — clients never care.
-- `distanceKm`: set at dispatch time from the route (sim-computed); `null` while `DRAFT`.
-- `revenueAmount`: **auto-computed at completion** = `distanceKm × ratePerKm`
-  (`transitops.rate-per-km` in `application.yml`, default `45`). `null` until `COMPLETED`.
-  Feeds the monthly-revenue chart and vehicle ROI on the Analytics screen — no manual entry.
 
 ### MaintenanceLog
 ```json
@@ -153,7 +146,7 @@ Request: `{ "refreshToken": "eyJ..." }` → Response `200`: **same shape as logi
 ### Vehicles
 - `GET /vehicles` → `Vehicle[]` — optional `?status=AVAILABLE` filter
 - `GET /vehicles/{id}` → `Vehicle`
-- `POST /vehicles` (body = Vehicle without `id`/`status`/`health`; `name` is the display name, e.g. `"VAN-05"`) → `201 Vehicle` — `409 DUPLICATE_REG_NUMBER`
+- `POST /vehicles` (body = Vehicle without `id`/`status`/`health`) → `201 Vehicle` — `409 DUPLICATE_REG_NUMBER`
 - `PUT /vehicles/{id}` → `Vehicle`
 - `POST /vehicles/{id}/retire` → `Vehicle` (status → `RETIRED`; terminal)
 
@@ -192,20 +185,10 @@ Request: `{ "refreshToken": "eyJ..." }` → Response `200`: **same shape as logi
   ```json
   {
     "totalVehicles": 12, "activeTrips": 4, "completedTrips": 38,
-    "totalRevenue": 412000,
     "totalFuelCost": 182000, "totalMaintenanceCost": 46000, "totalExpenses": 251000,
     "avgFuelEfficiencyKmPerL": 9.4, "fleetUtilizationPct": 66.7
   }
   ```
-- `GET /reports/analytics` → data for the Analytics screen:
-  ```json
-  {
-    "monthlyRevenue": [ { "month": "2026-07", "revenue": 412000 } ],
-    "topCostliestVehicles": [ { "vehicleId": "veh-9", "name": "TRUCK-11", "totalCost": 32400 } ],
-    "vehicleRoi": [ { "vehicleId": "veh-5", "name": "VAN-05", "roiPct": 14.2 } ]
-  }
-  ```
-  `roiPct = (revenue − (fuel + maintenance)) / acquisitionCost × 100`, per vehicle.
 - `GET /reports/export.csv` → `text/csv` download of trips + costs.
 
 ---
