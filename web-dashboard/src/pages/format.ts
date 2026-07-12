@@ -7,6 +7,20 @@ export const fmtStatus = (s: string): string => s.replaceAll('_', ' ');
 export const fmtMoney = (n: number): string => `₹${n.toLocaleString('en-IN')}`;
 export const fmtNum = (n: number): string => n.toLocaleString('en-IN');
 
+export function fmtTime(dateStr: string): string {
+  return new Date(dateStr).toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' });
+}
+
+export function exportToCsv(filename: string, headers: string[], rows: any[][]): void {
+  const lines = rows.map(r => r.map(v => `"${String(v ?? '').replace(/"/g, '""')}"`).join(','));
+  const blob = new Blob([[headers.join(','), ...lines].join('\n')], { type: 'text/csv' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = filename;
+  a.click();
+  URL.revokeObjectURL(a.href);
+}
+
 export const fmtDate = (ts: number | null): string =>
   ts == null ? '—' : new Date(ts).toLocaleDateString(undefined, { day: 'numeric', month: 'short' });
 

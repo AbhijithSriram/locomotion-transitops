@@ -98,6 +98,7 @@ export interface Api {
   getExpenses(): Promise<Expense[]>;
   createExpense(e: { vehicleId?: string | null; tripId?: string | null; category: ExpenseCategory; amount: number; description: string }): Promise<Expense>;
   getReportSummary(): Promise<ReportSummary>;
+  downloadReportCsv(): Promise<void>;
   spawnSimTrip(): Promise<void>;
   triggerSimBreakdown(vehicleId: string): Promise<void>;
   setSimSpeed(multiplier: number): Promise<{ multiplier: number }>;
@@ -343,6 +344,19 @@ const realApi: Api = {
         fleetUtilizationPct: vehicles.length ? Math.round((onTrip / vehicles.length) * 100) : 0,
       };
     }
+  },
+  downloadReportCsv: async () => {
+    const res = await fetch(`${API_BASE}/reports/export.csv`, {
+      headers: { 'Authorization': `Bearer ${session.token}` },
+    });
+    if (!res.ok) throw new Error('Failed to download CSV');
+    const blob = await res.blob();
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'transitops-report.csv';
+    a.click();
+    URL.revokeObjectURL(url);
   },
   spawnSimTrip: () => http<void>('/sim/spawn-trip', { method: 'POST' }),
   triggerSimBreakdown: (vehicleId) => http<void>(`/sim/trigger-breakdown/${vehicleId}`, { method: 'POST' }),

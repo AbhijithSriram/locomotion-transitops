@@ -2,7 +2,7 @@
 
 import { api } from '../api';
 import type { Vehicle, MaintenanceLog } from '../types/api';
-import { badge, fmtDate, fmtMoney, loadingRow, MAINT_BADGE, fmtStatus } from './format';
+import { badge, fmtDate, fmtMoney, loadingRow, MAINT_BADGE, fmtStatus, exportToCsv } from './format';
 
 export function renderMaintenance(el: HTMLElement): void {
   el.innerHTML = `
@@ -11,6 +11,7 @@ export function renderMaintenance(el: HTMLElement): void {
         <h2>Maintenance Log</h2>
         <div style="display: flex; gap: 12px; align-items: center;">
           <span class="muted small" id="mnt-summary"></span>
+          <button class="btn btn-ghost" id="btn-export-csv">Export CSV</button>
           <button class="btn btn-primary" id="btn-add-maint">+ Log Maintenance</button>
         </div>
       </div>
@@ -71,6 +72,17 @@ export function renderMaintenance(el: HTMLElement): void {
   };
 
   refresh();
+
+  el.querySelector<HTMLButtonElement>('#btn-export-csv')!.onclick = () => {
+    const headers = ['ID', 'Vehicle ID', 'Cost', 'Status', 'Opened At', 'Closed At', 'Description'];
+    const rows = all.map(l => [
+      l.id, l.vehicleId, l.cost, l.status, 
+      new Date(l.openedAt).toISOString(), 
+      l.closedAt ? new Date(l.closedAt).toISOString() : '', 
+      l.description
+    ]);
+    exportToCsv('transitops-maintenance.csv', headers, rows);
+  };
 
   // Add Maintenance modal
   addBtn.onclick = () => {

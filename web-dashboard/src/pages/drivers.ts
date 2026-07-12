@@ -2,14 +2,17 @@
 
 import { api } from '../api';
 import type { Driver } from '../types/api';
-import { badge, DRIVER_BADGE, fmtDate, loadingRow } from './format';
+import { badge, DRIVER_BADGE, fmtDate, loadingRow, exportToCsv } from './format';
 
 export function renderDrivers(el: HTMLElement): void {
   el.innerHTML = `
     <div class="panel">
       <div class="panel-head">
         <h2>Drivers &amp; Safety Profiles</h2>
-        <button class="btn btn-primary" id="btn-add-driver">+ Add Driver</button>
+        <div style="display: flex; gap: 12px; align-items: center;">
+          <button class="btn btn-ghost" id="btn-export-csv">Export CSV</button>
+          <button class="btn btn-primary" id="btn-add-driver">+ Add Driver</button>
+        </div>
       </div>
       <table class="table">
         <thead><tr>
@@ -80,6 +83,14 @@ export function renderDrivers(el: HTMLElement): void {
   };
 
   refresh();
+
+  el.querySelector<HTMLButtonElement>('#btn-export-csv')!.onclick = () => {
+    const headers = ['ID', 'Name', 'License Number', 'License Category', 'Contact', 'License Expiry', 'Safety Score', 'Status'];
+    const rows = all.map(d => [
+      d.id, d.name, d.licenseNumber, d.licenseCategory, d.contact, new Date(d.licenseExpiry).toISOString(), d.safetyScore, d.status
+    ]);
+    exportToCsv('transitops-drivers.csv', headers, rows);
+  };
 
   // Add driver modal setup
   addBtn.onclick = () => {

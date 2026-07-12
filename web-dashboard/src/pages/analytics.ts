@@ -147,7 +147,7 @@ export function renderAnalytics(el: HTMLElement): void {
     exportBtn.onclick = () => {
       if (!USE_MOCK) {
         // live backend serves the authoritative export
-        window.open('/reports/export.csv', '_blank');
+        void api.downloadReportCsv();
         return;
       }
       downloadCsv(trips, vehicles, drivers, fuelLogs);

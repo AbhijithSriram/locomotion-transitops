@@ -183,6 +183,7 @@ export const mockApi: Api = {
       fleetUtilizationPct: activeFleet.length === 0 ? 0 : Math.round((onTrip / activeFleet.length) * 100),
     });
   },
+  downloadReportCsv: () => delay(undefined),
   spawnSimTrip(): Promise<void> {
     const avVeh = vehicles.filter((v) => v.status === 'AVAILABLE');
     const avDrv = drivers.filter((d) => d.status === 'AVAILABLE');

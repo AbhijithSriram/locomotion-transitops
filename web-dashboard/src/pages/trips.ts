@@ -2,7 +2,7 @@
 
 import { api } from '../api';
 import type { Driver, Trip, Vehicle, Location } from '../types/api';
-import { badge, emptyRow, fmtDateTime, fmtNum, loadingRow, TRIP_BADGE, fmtStatus } from './format';
+import { badge, emptyRow, fmtDateTime, fmtNum, loadingRow, TRIP_BADGE, fmtStatus, exportToCsv } from './format';
 
 const STATUSES = ['ALL', 'DRAFT', 'DISPATCHED', 'COMPLETED', 'CANCELLED', 'INTERRUPTED'];
 
@@ -26,6 +26,7 @@ export function renderTrips(el: HTMLElement): void {
           <div class="filters">
             <select id="f-status">${STATUSES.map((s) => `<option value="${s}">${s === 'ALL' ? 'All statuses' : s}</option>`).join('')}</select>
           </div>
+          <button class="btn btn-ghost" id="btn-export-csv">Export CSV</button>
           <button class="btn btn-primary" id="btn-create-trip">+ Create Trip</button>
         </div>
       </div>
@@ -130,6 +131,17 @@ export function renderTrips(el: HTMLElement): void {
   };
 
   refresh();
+
+  el.querySelector<HTMLButtonElement>('#btn-export-csv')!.onclick = () => {
+    const headers = ['ID', 'Source', 'Destination', 'Vehicle ID', 'Driver ID', 'Cargo Weight (kg)', 'Status', 'Created At', 'Dispatched At', 'Completed At'];
+    const rows = all.map(t => [
+      t.id, t.source.name, t.destination.name, t.vehicleId, t.driverId, t.cargoWeightKg, t.status, 
+      new Date(t.createdAt).toISOString(), 
+      t.dispatchedAt ? new Date(t.dispatchedAt).toISOString() : '', 
+      t.completedAt ? new Date(t.completedAt).toISOString() : ''
+    ]);
+    exportToCsv('transitops-trips.csv', headers, rows);
+  };
 
   // Create Trip modal
   createBtn.onclick = () => {

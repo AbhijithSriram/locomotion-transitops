@@ -3,7 +3,7 @@
 
 import { api } from '../api';
 import type { Vehicle, VehicleType } from '../types/api';
-import { badge, emptyRow, fmtMoney, fmtNum, fmtStatus, loadingRow, riskCls, VEHICLE_BADGE } from './format';
+import { badge, emptyRow, exportToCsv, fmtMoney, fmtNum, fmtStatus, loadingRow, riskCls, VEHICLE_BADGE } from './format';
 
 const TYPES = ['ALL', 'TRUCK', 'MINI_TRUCK', 'VAN', 'BIKE'];
 const STATUSES = ['ALL', 'AVAILABLE', 'ON_TRIP', 'IN_SHOP', 'RETIRED', 'BROKEN_DOWN'];
@@ -21,6 +21,7 @@ export function renderVehicles(el: HTMLElement): void {
             <select id="f-type">${options(TYPES)}</select>
             <select id="f-status">${options(STATUSES)}</select>
           </div>
+          <button class="btn btn-ghost" id="btn-export-csv">Export CSV</button>
           <button class="btn btn-primary" id="btn-add-vehicle">+ Register Vehicle</button>
         </div>
       </div>
@@ -91,6 +92,14 @@ export function renderVehicles(el: HTMLElement): void {
   };
 
   refresh();
+
+  el.querySelector<HTMLButtonElement>('#btn-export-csv')!.onclick = () => {
+    const headers = ['ID', 'Reg Number', 'Type', 'Max Load (kg)', 'Odometer (km)', 'Acquisition Cost', 'Status', 'Risk Score'];
+    const rows = all.map(v => [
+      v.id, v.regNumber, v.type, v.maxLoadKg, v.odometer, v.acquisitionCost, v.status, v.health.riskScore
+    ]);
+    exportToCsv('transitops-vehicles.csv', headers, rows);
+  };
 
   // Modal registration setup
   addBtn.onclick = () => {

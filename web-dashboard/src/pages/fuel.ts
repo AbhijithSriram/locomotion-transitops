@@ -2,7 +2,7 @@
 
 import { api } from '../api';
 import type { Vehicle, ExpenseCategory } from '../types/api';
-import { badge, fmtDate, fmtMoney, fmtNum, loadingRow } from './format';
+import { badge, fmtDate, fmtMoney, fmtNum, loadingRow, exportToCsv } from './format';
 
 export function renderFuel(el: HTMLElement): void {
   el.innerHTML = `
@@ -11,7 +11,10 @@ export function renderFuel(el: HTMLElement): void {
       <div class="panel">
         <div class="panel-head">
           <h2>Fuel Logs</h2>
-          <button class="btn btn-primary" id="btn-add-fuel">+ Log Fuel</button>
+          <div style="display: flex; gap: 8px;">
+            <button class="btn btn-ghost" id="btn-export-fuel">Export</button>
+            <button class="btn btn-primary" id="btn-add-fuel">+ Log Fuel</button>
+          </div>
         </div>
         <table class="table">
           <thead><tr><th>Vehicle</th><th>Liters</th><th>Cost</th><th>₹/L</th><th>Odometer</th><th>Date</th></tr></thead>
@@ -22,7 +25,10 @@ export function renderFuel(el: HTMLElement): void {
       <div class="panel">
         <div class="panel-head">
           <h2>Other Expenses</h2>
-          <button class="btn btn-primary" id="btn-add-expense">+ Log Expense</button>
+          <div style="display: flex; gap: 8px;">
+            <button class="btn btn-ghost" id="btn-export-expenses">Export</button>
+            <button class="btn btn-primary" id="btn-add-expense">+ Log Expense</button>
+          </div>
         </div>
         <table class="table">
           <thead><tr><th>Category</th><th>Vehicle</th><th>Amount</th><th>Description</th><th>Date</th></tr></thead>
@@ -41,9 +47,14 @@ export function renderFuel(el: HTMLElement): void {
   let vehiclesById = new Map<string, string>();
   let allVehicles: Vehicle[] = [];
 
+  let allFuel: any[] = [];
+  let allExpenses: any[] = [];
+
   const refresh = () => {
     void Promise.all([api.getFuelLogs(), api.getExpenses(), api.getVehicles()]).then(
       ([fuelLogs, expenses, vehicles]) => {
+        allFuel = fuelLogs;
+        allExpenses = expenses;
         allVehicles = vehicles;
         vehiclesById = new Map(vehicles.map((v) => [v.id, v.regNumber]));
         const fuelTotal = fuelLogs.reduce((acc, f) => acc + f.cost, 0);
@@ -87,6 +98,22 @@ export function renderFuel(el: HTMLElement): void {
   };
 
   refresh();
+
+  el.querySelector<HTMLButtonElement>('#btn-export-fuel')!.onclick = () => {
+    const headers = ['ID', 'Vehicle ID', 'Trip ID', 'Liters', 'Cost', 'Odometer', 'Logged At'];
+    const rows = allFuel.map(f => [
+      f.id, f.vehicleId, f.tripId || '', f.liters, f.cost, f.odometer, new Date(f.loggedAt).toISOString()
+    ]);
+    exportToCsv('transitops-fuel.csv', headers, rows);
+  };
+
+  el.querySelector<HTMLButtonElement>('#btn-export-expenses')!.onclick = () => {
+    const headers = ['ID', 'Category', 'Vehicle ID', 'Trip ID', 'Amount', 'Description', 'Incurred At'];
+    const rows = allExpenses.map(e => [
+      e.id, e.category, e.vehicleId || '', e.tripId || '', e.amount, e.description, new Date(e.incurredAt).toISOString()
+    ]);
+    exportToCsv('transitops-expenses.csv', headers, rows);
+  };
 
   // Log Fuel Modal
   addFuelBtn.onclick = () => {
