@@ -1,21 +1,10 @@
 package com.transitops.domain.vehicle.entity;
 
 import com.transitops.common.enums.VehicleStatus;
-import jakarta.persistence.CascadeType;
-import jakarta.persistence.Column;
-import jakarta.persistence.Entity;
-import jakarta.persistence.EnumType;
-import jakarta.persistence.Enumerated;
-import jakarta.persistence.Id;
-import jakarta.persistence.JoinColumn;
-import jakarta.persistence.MapsId;
-import jakarta.persistence.OneToOne;
-import jakarta.persistence.Table;
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Getter;
-import lombok.NoArgsConstructor;
-import lombok.Setter;
+import jakarta.persistence.*;
+import lombok.*;
+import org.springframework.data.domain.Persistable;
+import org.springframework.data.annotation.Transient;
 
 @Entity
 @Table(name = "vehicles")
@@ -24,7 +13,7 @@ import lombok.Setter;
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-public class Vehicle {
+public class Vehicle implements Persistable<String> {
 
     @Id
     private String id;
@@ -33,9 +22,7 @@ public class Vehicle {
     private String regNumber;
 
     private String name;
-
     private String type;
-
     private double maxLoadKg;
 
     @Builder.Default
@@ -54,4 +41,19 @@ public class Vehicle {
 
     @Builder.Default
     private String transportMode = "TRUCK";
+
+    @Transient
+    @Builder.Default
+    private boolean isNew = true;
+
+    @Override
+    public boolean isNew() {
+        return isNew;
+    }
+
+    @PostLoad
+    @PostPersist
+    void markNotNew() {
+        this.isNew = false;
+    }
 }
