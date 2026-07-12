@@ -20,21 +20,25 @@ data class RefreshRequest(
     val refreshToken: String
 )
 
+/**
+ * Full login/refresh response matching the API contract.
+ * `user.driverId` is only present when role == "DRIVER".
+ */
 @JsonClass(generateAdapter = true)
 data class AuthResponse(
     val accessToken: String,
     val refreshToken: String,
-    val role: String,
-    val email: String
+    val expiresInMs: Long,
+    val user: AuthUserDto
 )
 
 @JsonClass(generateAdapter = true)
-data class UserDto(
-    val id: String,
+data class AuthUserDto(
+    val id: Long,
     val name: String,
     val email: String,
-    val role: Role,
-    val driverId: String? // Only present if role == DRIVER
+    val role: String,
+    val driverId: Long? // only present when role == DRIVER
 )
 
 // --- Shared Entity DTOs ---
@@ -48,13 +52,11 @@ data class LocationDto(
 
 @JsonClass(generateAdapter = true)
 data class VehicleDto(
-    val id: String,
+    val id: Long,
     val regNumber: String,
     val type: VehicleType,
     val maxLoadKg: Double,
-    val odometer: Double,
-    // Note: status and health are omitted here as per the active-trip payload shape, 
-    // but can be added if needed for other endpoints.
+    val odometer: Double
 )
 
 // --- Active Trip ---
@@ -64,7 +66,7 @@ data class VehicleDto(
  */
 @JsonClass(generateAdapter = true)
 data class ActiveTripResponse(
-    val tripId: String,
+    val tripId: Long,
     val status: TripStatus,
     val source: LocationDto,
     val destination: LocationDto,

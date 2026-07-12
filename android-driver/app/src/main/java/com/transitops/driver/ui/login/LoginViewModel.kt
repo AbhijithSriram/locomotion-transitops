@@ -22,23 +22,41 @@ class LoginViewModel : ViewModel() {
     private val _uiState = MutableStateFlow<LoginUiState>(LoginUiState.Idle)
     val uiState: StateFlow<LoginUiState> = _uiState.asStateFlow()
 
+    init {
+        // If a token is already cached, skip the login screen entirely.
+        if (TokenProvider.isLoggedIn) {
+            _uiState.value = LoginUiState.Success
+        }
+    }
+
     fun login(email: String, pass: String) {
         viewModelScope.launch {
             _uiState.value = LoginUiState.Loading
             try {
                 val response = NetworkProvider.api.login(LoginRequest(email, pass))
                 if (response.isSuccessful && response.body() != null) {
-                    val authResponse = response.body()!!
-                    TokenProvider.token = authResponse.accessToken
-                    Log.i("LoginViewModel", "Login successful for ${authResponse.email} with role ${authResponse.role}")
+                    val auth = response.body()!!
+                    // Persist all auth data for offline use
+                    TokenProvider.token = auth.accessToken
+                    TokenProvider.refreshToken = auth.refreshToken
+                    TokenProvider.driverId = auth.user.driverId?.toString()
+                    TokenProvider.driverName = auth.user.name
+                    Log.i("LoginViewModel", "Login OK — ${auth.user.name} (role=${auth.user.role})")
                     _uiState.value = LoginUiState.Success
                 } else {
-                    _uiState.value = LoginUiState.Error("Login failed: ${response.code()}")
+                    val code = response.code()
+                    val msg = if (code == 401) "Invalid email or password" else "Login failed ($code)"
+                    _uiState.value = LoginUiState.Error(msg)
                 }
             } catch (e: Exception) {
-                Log.e("LoginViewModel", "Login error", e)
-                _uiState.value = LoginUiState.Error("Network error: ${e.message}")
+                Log.e("LoginViewModel", "Login network error", e)
+                _uiState.value = LoginUiState.Error("Network error — check your connection")
             }
         }
+    }
+
+    fun logout() {
+        TokenProvider.clear()
+        _uiState.value = LoginUiState.Idle
     }
 }

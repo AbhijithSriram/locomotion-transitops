@@ -23,8 +23,8 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 
 @Composable
 fun LoginScreen(
-    onLoginSuccess: () -> Unit,
-    viewModel: LoginViewModel = viewModel()
+    viewModel: LoginViewModel,
+    onLoginSuccess: () -> Unit
 ) {
     var email by remember { mutableStateOf("admin@transitops.com") }
     var password by remember { mutableStateOf("admin123") }

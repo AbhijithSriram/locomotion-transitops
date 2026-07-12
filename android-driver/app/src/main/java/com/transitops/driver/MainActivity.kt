@@ -8,45 +8,47 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
+import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
-import com.transitops.driver.ui.login.LoginScreen
-import com.transitops.driver.ui.trip.ActiveTripScreen
-import androidx.lifecycle.viewmodel.compose.viewModel
-import com.transitops.driver.ui.trip.ReportScreen
-import com.transitops.driver.ui.trip.TripViewModel
-
 import androidx.work.Constraints
 import androidx.work.ExistingPeriodicWorkPolicy
 import androidx.work.NetworkType
 import androidx.work.PeriodicWorkRequestBuilder
 import androidx.work.WorkManager
+import com.transitops.driver.data.auth.TokenProvider
 import com.transitops.driver.data.sync.SyncWorker
+import com.transitops.driver.ui.login.LoginScreen
+import com.transitops.driver.ui.login.LoginViewModel
+import com.transitops.driver.ui.trip.ActiveTripScreen
+import com.transitops.driver.ui.trip.ReportScreen
+import com.transitops.driver.ui.trip.TripViewModel
 import java.util.concurrent.TimeUnit
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        com.transitops.driver.data.auth.TokenProvider.init(applicationContext)
 
-        // Schedule our SyncWorker to run every 15 minutes whenever connected to a network.
+        // Must initialise before any ViewModel reads the token
+        TokenProvider.init(applicationContext)
+
+        // Schedule periodic background sync every 15 minutes when online
         val syncConstraints = Constraints.Builder()
             .setRequiredNetworkType(NetworkType.CONNECTED)
             .build()
-            
+
         val syncWorkRequest = PeriodicWorkRequestBuilder<SyncWorker>(15, TimeUnit.MINUTES)
             .setConstraints(syncConstraints)
             .build()
-            
+
         WorkManager.getInstance(applicationContext).enqueueUniquePeriodicWork(
             "OutboxSyncWork",
             ExistingPeriodicWorkPolicy.KEEP,
             syncWorkRequest
         )
-        
+
         setContent {
-            // A simple theme wrapper
             MaterialTheme {
                 Surface(
                     modifier = Modifier.fillMaxSize(),
@@ -60,8 +62,11 @@ class MainActivity : ComponentActivity() {
 }
 
 /**
- * Main Navigation host for the Android Driver App.
- * We define three simple routes: "login", "trip", and "report".
+ * Root navigation graph.
+ * Routes: "login" → "trip" → "report"
+ *
+ * The LoginViewModel's init block auto-advances to "trip" if a token
+ * is already cached, so returning users never see the login screen.
  */
 @Composable
 fun TransitOpsApp() {
@@ -69,21 +74,24 @@ fun TransitOpsApp() {
 
     NavHost(navController = navController, startDestination = "login") {
         composable("login") {
+            val loginViewModel: LoginViewModel = viewModel()
             LoginScreen(
+                viewModel = loginViewModel,
                 onLoginSuccess = {
-                    // Navigate to the trip screen and remove login from the backstack
                     navController.navigate("trip") {
                         popUpTo("login") { inclusive = true }
                     }
                 }
             )
         }
+
         composable("trip") {
             val tripViewModel: TripViewModel = viewModel()
+            val loginViewModel: LoginViewModel = viewModel()
             ActiveTripScreen(
                 viewModel = tripViewModel,
                 onLogout = {
-                    // Navigate back to login
+                    loginViewModel.logout()
                     navController.navigate("login") {
                         popUpTo("trip") { inclusive = true }
                     }
@@ -93,15 +101,15 @@ fun TransitOpsApp() {
                 }
             )
         }
+
         composable("report") {
-            val tripViewModel: TripViewModel = viewModel()
+            // TripViewModel is scoped to the NavBackStackEntry of "trip" so it
+            // shares the same instance — keeping activeTrip state alive.
+            val tripBackStack = navController.getBackStackEntry("trip")
+            val tripViewModel: TripViewModel = viewModel(tripBackStack)
             ReportScreen(
-                tripId = "trip-42",
-                vehicleId = "veh-5",
                 viewModel = tripViewModel,
-                onNavigateBack = {
-                    navController.popBackStack()
-                }
+                onNavigateBack = { navController.popBackStack() }
             )
         }
     }

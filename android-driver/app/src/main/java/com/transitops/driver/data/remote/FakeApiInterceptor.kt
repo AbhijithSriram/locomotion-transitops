@@ -29,12 +29,12 @@ class FakeApiInterceptor : Interceptor {
             path.contains("/driver/me/active-trip") -> {
                 """
                 {
-                  "tripId": "trip-42",
+                  "tripId": 42,
                   "status": "DISPATCHED",
                   "source": { "name": "Chennai Depot", "lat": 13.0827, "lng": 80.2707 },
                   "destination": { "name": "Bangalore Hub", "lat": 12.9716, "lng": 77.5946 },
                   "cargoWeightKg": 1200,
-                  "vehicle": { "id": "veh-5", "regNumber": "TN-01-AB-1234", "type": "VAN", "maxLoadKg": 2000, "odometer": 15000 },
+                  "vehicle": { "id": 5, "regNumber": "TN-01-AB-1234", "type": "VAN", "maxLoadKg": 2000, "odometer": 15000 },
                   "routePolyline": "gfo}EtohhU...",
                   "dispatchedAt": 1752300000000
                 }

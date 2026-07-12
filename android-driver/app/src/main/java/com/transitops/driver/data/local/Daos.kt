@@ -38,6 +38,10 @@ interface TripDao {
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertTrip(trip: CachedTrip)
 
+    /** Insert or update the cached trip atomically. */
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun upsertTrip(trip: CachedTrip)
+
     @Query("SELECT * FROM cached_trips LIMIT 1")
     suspend fun getActiveTrip(): CachedTrip?
 
