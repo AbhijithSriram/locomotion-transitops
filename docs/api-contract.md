@@ -7,8 +7,10 @@
 
 ## Global conventions
 
-- Base URL: `http://<host>:8080/api`
-- **IDs are numeric `long`** (`1`, `42`).
+- Base URL: `http://<host>:8080` (no `/api` prefix — matches backend bootstrap)
+- **IDs are server-generated UUID strings** (e.g. `"550e8400-e29b-41d4-a716-446655440000"`).
+  Examples below use short placeholders (`"veh-5"`, `"drv-3"`, `"trip-42"`, `"usr-7"`) for readability;
+  on the wire they are full UUIDs. Clients treat every id as an opaque string.
 - **All timestamps are epoch milliseconds** (`1752300000000`) — plain numbers,
   no ISO parsing/adapters needed in Gson/Moshi, Jackson, or JS.
 - Auth: `Authorization: Bearer <accessToken>` header on everything except
@@ -55,7 +57,7 @@ Response `200`:
   "accessToken": "eyJ...",
   "refreshToken": "eyJ...",
   "expiresInMs": 43200000,
-  "user": { "id": 7, "name": "Alex", "email": "alex@transitops.io", "role": "DRIVER", "driverId": 3 }
+  "user": { "id": "usr-7", "name": "Alex", "email": "alex@transitops.io", "role": "DRIVER", "driverId": "drv-3" }
 }
 ```
 
@@ -73,7 +75,7 @@ Request: `{ "refreshToken": "eyJ..." }` → Response `200`: **same shape as logi
 ### Vehicle
 ```json
 {
-  "id": 5,
+  "id": "veh-5",
   "regNumber": "TN-01-AB-1234",
   "type": "VAN",
   "maxLoadKg": 2000,
@@ -89,7 +91,7 @@ Request: `{ "refreshToken": "eyJ..." }` → Response `200`: **same shape as logi
 ### Driver
 ```json
 {
-  "id": 3,
+  "id": "drv-3",
   "name": "Alex",
   "licenseNumber": "DL-2020-998877",
   "licenseExpiry": 1785000000000,
@@ -101,11 +103,11 @@ Request: `{ "refreshToken": "eyJ..." }` → Response `200`: **same shape as logi
 ### Trip
 ```json
 {
-  "id": 42,
+  "id": "trip-42",
   "source":      { "name": "Chennai Depot", "lat": 13.0827, "lng": 80.2707 },
   "destination": { "name": "Bangalore Hub", "lat": 12.9716, "lng": 77.5946 },
-  "vehicleId": 5,
-  "driverId": 3,
+  "vehicleId": "veh-5",
+  "driverId": "drv-3",
   "cargoWeightKg": 1200,
   "status": "DISPATCHED",
   "routePolyline": "gfo}EtohhU...",
@@ -120,20 +122,20 @@ Request: `{ "refreshToken": "eyJ..." }` → Response `200`: **same shape as logi
 
 ### MaintenanceLog
 ```json
-{ "id": 9, "vehicleId": 5, "description": "Brake pad replacement", "cost": 4500,
+{ "id": "mnt-9", "vehicleId": "veh-5", "description": "Brake pad replacement", "cost": 4500,
   "status": "OPEN", "openedAt": 1752300000000, "closedAt": null }
 ```
 
 ### FuelLog
 ```json
-{ "id": 21, "vehicleId": 5, "tripId": 42, "liters": 45.5, "cost": 4200,
+{ "id": "fuel-21", "vehicleId": "veh-5", "tripId": "trip-42", "liters": 45.5, "cost": 4200,
   "odometer": 15020, "loggedAt": 1752301000000 }
 ```
 - `tripId` nullable (depot refuels aren't tied to a trip).
 
 ### Expense
 ```json
-{ "id": 33, "vehicleId": 5, "tripId": null, "category": "TOLL", "amount": 350,
+{ "id": "exp-33", "vehicleId": "veh-5", "tripId": null, "category": "TOLL", "amount": 350,
   "description": "NH44 toll", "incurredAt": 1752301000000 }
 ```
 
@@ -157,7 +159,7 @@ Request: `{ "refreshToken": "eyJ..." }` → Response `200`: **same shape as logi
 - `GET /trips/{id}` → `Trip`
 - `POST /trips` → `201 Trip` (status `DRAFT`). Body:
   ```json
-  { "source": {...}, "destination": {...}, "vehicleId": 5, "driverId": 3, "cargoWeightKg": 1200 }
+  { "source": {...}, "destination": {...}, "vehicleId": "veh-5", "driverId": "drv-3", "cargoWeightKg": 1200 }
   ```
   Validation (`OVERLOADED_VEHICLE` etc.) runs at **dispatch**, not draft creation.
 - `POST /trips/{id}/dispatch` → `Trip` — runs the full business-rule state machine
@@ -170,7 +172,7 @@ Request: `{ "refreshToken": "eyJ..." }` → Response `200`: **same shape as logi
 
 ### Maintenance
 - `GET /maintenance` → `MaintenanceLog[]` — optional `?vehicleId=` / `?status=OPEN`
-- `POST /maintenance` `{ "vehicleId": 5, "description": "...", "cost": 4500 }` → `201`
+- `POST /maintenance` `{ "vehicleId": "veh-5", "description": "...", "cost": 4500 }` → `201`
   — vehicle → `IN_SHOP` (`409 VEHICLE_NOT_AVAILABLE` if it's on a trip)
 - `POST /maintenance/{id}/close` → `MaintenanceLog` — vehicle → `AVAILABLE` (unless `RETIRED`)
 
@@ -200,12 +202,12 @@ The trip in `DISPATCHED` status for the driver identified by the bearer token.
 Response `200`:
 ```json
 {
-  "tripId": 42,
+  "tripId": "trip-42",
   "status": "DISPATCHED",
   "source":      { "name": "Chennai Depot", "lat": 13.0827, "lng": 80.2707 },
   "destination": { "name": "Bangalore Hub", "lat": 12.9716, "lng": 77.5946 },
   "cargoWeightKg": 1200,
-  "vehicle": { "id": 5, "regNumber": "TN-01-AB-1234", "type": "VAN", "maxLoadKg": 2000, "odometer": 15000 },
+  "vehicle": { "id": "veh-5", "regNumber": "TN-01-AB-1234", "type": "VAN", "maxLoadKg": 2000, "odometer": 15000 },
   "routePolyline": "gfo}EtohhU...",
   "dispatchedAt": 1752300000000
 }
@@ -229,7 +231,7 @@ Request:
       "idempotencyKey": "550e8400-e29b-41d4-a716-446655440000",
       "type": "TRIP_COMPLETE",
       "performedAt": 1752301234567,
-      "payload": { "tripId": 42, "finalOdometer": 15020, "fuelUsedLiters": 45 }
+      "payload": { "tripId": "trip-42", "finalOdometer": 15020, "fuelUsedLiters": 45 }
     }
   ]
 }
@@ -244,10 +246,10 @@ Per-type payloads:
 
 | `type` | `payload` |
 |---|---|
-| `TRIP_COMPLETE` | `{ "tripId": 42, "finalOdometer": 15020, "fuelUsedLiters": 45 }` (`fuelUsedLiters` optional) |
-| `FUEL_LOG` | `{ "vehicleId": 5, "liters": 45.5, "cost": 4200, "odometer": 15020 }` |
-| `ODOMETER_UPDATE` | `{ "vehicleId": 5, "odometer": 15100 }` |
-| `INCIDENT_REPORT` | `{ "tripId": 42, "vehicleId": 5, "description": "...", "severity": "HIGH" }` (`tripId` optional) |
+| `TRIP_COMPLETE` | `{ "tripId": "trip-42", "finalOdometer": 15020, "fuelUsedLiters": 45 }` (`fuelUsedLiters` optional) |
+| `FUEL_LOG` | `{ "vehicleId": "veh-5", "liters": 45.5, "cost": 4200, "odometer": 15020 }` |
+| `ODOMETER_UPDATE` | `{ "vehicleId": "veh-5", "odometer": 15100 }` |
+| `INCIDENT_REPORT` | `{ "tripId": "trip-42", "vehicleId": "veh-5", "description": "...", "severity": "HIGH" }` (`tripId` optional) |
 
 Response `200` (always 200; per-item outcomes inside):
 ```json
@@ -270,7 +272,7 @@ Response `200` (always 200; per-item outcomes inside):
 
 ## 5. Simulation god-mode (Person B; used by dashboard demo controls)
 
-- `POST /sim/spawn-trip` — body optional `{ "vehicleId": 5, "driverId": 3 }`; omitted →
+- `POST /sim/spawn-trip` — body optional `{ "vehicleId": "veh-5", "driverId": "drv-3" }`; omitted →
   random available pair. Creates + dispatches a trip with a real route. → `Trip`
 - `POST /sim/trigger-breakdown/{vehicleId}` → `202` — vehicle → `BROKEN_DOWN`, trip →
   `INTERRUPTED`, alert emitted, rescue dispatch logic kicks in

@@ -1,7 +1,7 @@
-End-to-end transport ERP digitizing vehicle dispatch, maintenance, and expense management. Features an offline-first driver app and conversational AI dispatching
-
 # Team Locomotion
 
+End-to-end transport ERP digitizing vehicle dispatch, maintenance, and expense management. Features an offline-first driver app and conversational AI dispatching
+
 Abhijith Sriram,
-Malleshkumar K,
+Mallesh Kumar K,
 Srivathsan G
