@@ -7,12 +7,22 @@ import com.transitops.driver.data.local.DatabaseProvider
 import com.transitops.driver.data.local.OutboxAction
 import com.transitops.driver.data.remote.OutboxActionType
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.flow.SharingStarted
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import java.util.UUID
 
 class TripViewModel(application: Application) : AndroidViewModel(application) {
 
     private val db = DatabaseProvider.getDatabase(application)
+    
+    val outboxActions: StateFlow<List<OutboxAction>> = db.outboxDao().getActionsFlow()
+        .stateIn(
+            scope = viewModelScope,
+            started = SharingStarted.WhileSubscribed(5000),
+            initialValue = emptyList()
+        )
 
     fun logFuel(vehicleId: String, liters: Double, cost: Double, odometer: Double) {
         viewModelScope.launch(Dispatchers.IO) {
@@ -60,11 +70,11 @@ class TripViewModel(application: Application) : AndroidViewModel(application) {
 
     private suspend fun insertOutboxAction(type: OutboxActionType, payload: String) {
         val action = OutboxAction(
-            id = UUID.randomUUID().toString(),
-            type = type,
+            idempotencyKey = UUID.randomUUID().toString(),
+            type = type.name,
             payloadJson = payload,
             createdAt = System.currentTimeMillis()
         )
-        db.outboxDao().insert(action)
+        db.outboxDao().insertAction(action)
     }
 }

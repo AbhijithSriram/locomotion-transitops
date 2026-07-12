@@ -8,6 +8,12 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.dp
 
+import androidx.compose.ui.text.input.ImeAction
+import androidx.compose.ui.text.input.KeyboardType
+import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.foundation.text.KeyboardActions
+import androidx.compose.ui.platform.LocalFocusManager
+
 /**
  * The Login Screen for the driver.
  * In a real app, this would use a ViewModel to call the TransitOpsApi and save the 
@@ -18,6 +24,15 @@ fun LoginScreen(onLoginSuccess: () -> Unit) {
     var email by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
     var isLoading by remember { mutableStateOf(false) }
+    
+    val focusManager = LocalFocusManager.current
+    
+    val doLogin = {
+        if (!isLoading && email.isNotBlank() && password.isNotBlank()) {
+            isLoading = true
+            onLoginSuccess()
+        }
+    }
 
     Column(
         modifier = Modifier
@@ -36,6 +51,11 @@ fun LoginScreen(onLoginSuccess: () -> Unit) {
             value = email,
             onValueChange = { email = it },
             label = { Text("Email") },
+            keyboardOptions = KeyboardOptions(
+                keyboardType = KeyboardType.Email,
+                imeAction = ImeAction.Next
+            ),
+            singleLine = true,
             modifier = Modifier.fillMaxWidth()
         )
 
@@ -46,6 +66,17 @@ fun LoginScreen(onLoginSuccess: () -> Unit) {
             onValueChange = { password = it },
             label = { Text("Password") },
             visualTransformation = PasswordVisualTransformation(),
+            keyboardOptions = KeyboardOptions(
+                keyboardType = KeyboardType.Password,
+                imeAction = ImeAction.Done
+            ),
+            keyboardActions = KeyboardActions(
+                onDone = { 
+                    focusManager.clearFocus()
+                    doLogin()
+                }
+            ),
+            singleLine = true,
             modifier = Modifier.fillMaxWidth()
         )
 
@@ -53,10 +84,8 @@ fun LoginScreen(onLoginSuccess: () -> Unit) {
 
         Button(
             onClick = {
-                // Simulate network call
-                isLoading = true
-                // We just immediately "succeed" for the UI demo
-                onLoginSuccess()
+                focusManager.clearFocus()
+                doLogin()
             },
             modifier = Modifier
                 .fillMaxWidth()

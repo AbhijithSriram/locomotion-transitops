@@ -17,6 +17,10 @@ interface OutboxDao {
     @Query("SELECT * FROM outbox_actions WHERE synced = 0 ORDER BY createdAt ASC")
     suspend fun getUnsyncedActions(): List<OutboxAction>
 
+    // Observe all outbox actions reactively for the UI (latest first)
+    @Query("SELECT * FROM outbox_actions ORDER BY createdAt DESC")
+    fun getActionsFlow(): kotlinx.coroutines.flow.Flow<List<OutboxAction>>
+
     // Mark specific actions as synced so they aren't sent again
     @Query("UPDATE outbox_actions SET synced = 1 WHERE idempotencyKey IN (:keys)")
     suspend fun markAsSynced(keys: List<String>)
