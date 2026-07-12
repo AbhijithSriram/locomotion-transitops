@@ -8,6 +8,8 @@ import org.springframework.data.domain.Persistable;
 
 import java.time.LocalDate;
 
+import java.time.Instant;
+
 @Entity
 @Table(name = "drivers")
 @Getter
