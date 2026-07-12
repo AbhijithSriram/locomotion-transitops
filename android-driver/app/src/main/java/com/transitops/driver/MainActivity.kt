@@ -24,6 +24,8 @@ import com.transitops.driver.ui.login.LoginViewModel
 import com.transitops.driver.ui.trip.ActiveTripScreen
 import com.transitops.driver.ui.trip.ReportScreen
 import com.transitops.driver.ui.trip.TripViewModel
+import com.transitops.driver.ui.ai.AiAssistantScreen
+import com.transitops.driver.ui.ai.GemmaViewModel
 import java.util.concurrent.TimeUnit
 
 class MainActivity : ComponentActivity() {
@@ -98,7 +100,21 @@ fun TransitOpsApp() {
                 },
                 onNavigateToReport = {
                     navController.navigate("report")
+                },
+                onNavigateToAssistant = {
+                    navController.navigate("assistant")
                 }
+            )
+        }
+
+        composable("assistant") {
+            val tripBackStack = navController.getBackStackEntry("trip")
+            val tripViewModel: TripViewModel = viewModel(tripBackStack)
+            val gemmaViewModel: GemmaViewModel = viewModel()
+            AiAssistantScreen(
+                gemmaViewModel = gemmaViewModel,
+                tripViewModel = tripViewModel,
+                onNavigateBack = { navController.popBackStack() }
             )
         }
 

@@ -33,7 +33,8 @@ import org.json.JSONObject
 fun ActiveTripScreen(
     viewModel: TripViewModel,
     onLogout: () -> Unit,
-    onNavigateToReport: () -> Unit
+    onNavigateToReport: () -> Unit,
+    onNavigateToAssistant: () -> Unit
 ) {
     val activeTrip by viewModel.activeTrip.collectAsState()
     val isTripLoading by viewModel.isTripLoading.collectAsState()
@@ -319,6 +320,14 @@ fun ActiveTripScreen(
                             modifier = Modifier.fillMaxWidth().height(50.dp)
                         ) {
                             Text("Report Incident / Log Fuel")
+                        }
+
+                        Button(
+                            onClick = { onNavigateToAssistant() },
+                            modifier = Modifier.fillMaxWidth().height(50.dp),
+                            colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.tertiary)
+                        ) {
+                            Text("AI Assistant (Gemma)")
                         }
                     }
                 }

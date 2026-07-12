@@ -43,6 +43,10 @@ android {
             excludes += "/META-INF/{AL2.0,LGPL2.1}"
         }
     }
+    
+    androidResources {
+        noCompress += "task"
+    }
 }
 
 dependencies {
@@ -76,6 +80,9 @@ dependencies {
 
     // Security
     implementation("androidx.security:security-crypto-ktx:1.1.0-alpha06")
+
+    // MediaPipe GenAI for local Gemma
+    implementation("com.google.mediapipe:tasks-genai:0.10.27")
 
     testImplementation("junit:junit:4.13.2")
     androidTestImplementation("androidx.test.ext:junit:1.1.5")
