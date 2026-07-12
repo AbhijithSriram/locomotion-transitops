@@ -6,4 +6,7 @@ android-driver/.idea/
 android-driver/.gradle/
 
 *.gguf
+.claude/
+**/.DS_Store
+
 

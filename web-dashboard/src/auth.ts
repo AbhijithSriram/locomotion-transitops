@@ -26,6 +26,14 @@ export const session = {
   get accessToken(): string | null {
     return current?.accessToken ?? null;
   },
+  get refreshToken(): string | null {
+    return current?.refreshToken ?? null;
+  },
+  updateTokens(accessToken: string, refreshToken: string): void {
+    if (!current) return;
+    current = { ...current, accessToken, refreshToken };
+    sessionStorage.setItem(KEY, JSON.stringify(current));
+  },
   save(res: LoginResponse): void {
     current = { accessToken: res.accessToken, refreshToken: res.refreshToken, user: res.user };
     sessionStorage.setItem(KEY, JSON.stringify(current));

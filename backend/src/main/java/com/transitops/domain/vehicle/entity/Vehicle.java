@@ -4,7 +4,6 @@ import com.transitops.common.enums.VehicleStatus;
 import jakarta.persistence.*;
 import lombok.*;
 import org.springframework.data.domain.Persistable;
-import org.springframework.data.annotation.Transient;
 
 @Entity
 @Table(name = "vehicles")

@@ -1,6 +1,7 @@
 package com.transitops.simulation.service;
 
 import com.transitops.common.enums.*;
+import com.transitops.common.events.TripStatusChanged;
 import com.transitops.domain.driver.entity.Driver;
 import com.transitops.domain.driver.repository.DriverRepository;
 import com.transitops.domain.finance.entity.Expense;
@@ -20,6 +21,8 @@ import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.scheduling.annotation.EnableScheduling;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.event.TransactionPhase;
+import org.springframework.transaction.event.TransactionalEventListener;
 
 import jakarta.annotation.PostConstruct;
 import java.time.Instant;
@@ -78,6 +81,22 @@ public class SimulationService {
             registerTrip(trip, 0.2 + new Random().nextDouble() * 0.5); // start at random progress
         }
         log.info("Initialized simulation with {} active trips", activeTrips.size());
+    }
+
+    /**
+     * Keeps the in-memory simulation registry in sync with dispatch actions taken
+     * through the REST API (the dashboard), not just /sim/spawn-trip.
+     */
+    @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
+    public void onTripStatusChanged(TripStatusChanged event) {
+        Trip trip = event.trip();
+        if (trip.getStatus() == TripStatus.DISPATCHED) {
+            if (!activeTrips.containsKey(trip.getId())) {
+                registerTrip(trip, 0.0);
+            }
+        } else {
+            activeTrips.remove(trip.getId());
+        }
     }
 
     public void setSpeedMultiplier(int multiplier) {

@@ -18,17 +18,20 @@ public class UserSeeder implements CommandLineRunner {
 
     @Override
     public void run(String... args) {
-        userRepository.findByEmail("admin@transitops.com").ifPresentOrElse(
+        seed("admin@transitops.com", Role.FLEET_MANAGER);
+        seed("safety@transitops.com", Role.SAFETY_OFFICER);
+        seed("finance@transitops.com", Role.FINANCIAL_ANALYST);
+    }
+
+    private void seed(String email, Role role) {
+        userRepository.findByEmail(email).ifPresentOrElse(
                 existing -> { /* already seeded */ },
-                () -> {
-                    User admin = User.builder()
-                            .id(Ids.newId())
-                            .email("admin@transitops.com")
-                            .passwordHash(passwordEncoder.encode("admin123"))
-                            .role(Role.FLEET_MANAGER)
-                            .build();
-                    userRepository.save(admin);
-                }
+                () -> userRepository.save(User.builder()
+                        .id(Ids.newId())
+                        .email(email)
+                        .passwordHash(passwordEncoder.encode("admin123"))
+                        .role(role)
+                        .build())
         );
     }
 }

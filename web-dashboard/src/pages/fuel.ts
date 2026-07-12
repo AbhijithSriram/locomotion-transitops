@@ -63,10 +63,10 @@ export function renderFuel(el: HTMLElement): void {
           .map((f) => `
             <tr>
               <td class="mono">${vehiclesById.get(f.vehicleId) ?? '—'}</td>
-              <td>${f.liters} L</td>
-              <td>${fmtMoney(f.cost)}</td>
+              <td>${Math.round(f.liters * 10) / 10} L</td>
+              <td>${fmtMoney(Math.round(f.cost))}</td>
               <td class="muted">${f.liters > 0 ? (f.cost / f.liters).toFixed(0) : '—'}</td>
-              <td class="muted">${fmtNum(f.odometer)} km</td>
+              <td class="muted">${fmtNum(Math.round(f.odometer))} km</td>
               <td class="muted">${fmtDate(f.loggedAt)}</td>
             </tr>`)
           .join('');
@@ -102,7 +102,7 @@ export function renderFuel(el: HTMLElement): void {
         <form id="fuel-form">
           <label>Select Vehicle
             <select name="vehicleId">
-              ${allVehicles.map((v) => `<option value="${v.id}">${v.regNumber} (Current Odo: ${v.odometer}km)</option>`).join('')}
+              ${allVehicles.map((v) => `<option value="${v.id}">${v.regNumber} (Current Odo: ${Math.round(v.odometer)}km)</option>`).join('')}
             </select>
           </label>
           <label>Liters Refueled
@@ -126,6 +126,18 @@ export function renderFuel(el: HTMLElement): void {
     overlay.querySelector('#modal-close')!.addEventListener('click', () => overlay.remove());
 
     const form = overlay.querySelector<HTMLFormElement>('#fuel-form')!;
+
+    // Pre-fill the odometer with the selected vehicle's live reading so logs
+    // stay consistent with the simulator; the user can still adjust it.
+    const vehicleSelect = form.querySelector<HTMLSelectElement>('select[name="vehicleId"]')!;
+    const odoInput = form.querySelector<HTMLInputElement>('input[name="odometer"]')!;
+    const syncOdometer = () => {
+      const veh = allVehicles.find((v) => v.id === vehicleSelect.value);
+      if (veh) odoInput.value = String(Math.round(veh.odometer));
+    };
+    syncOdometer();
+    vehicleSelect.addEventListener('change', syncOdometer);
+
     form.onsubmit = (e) => {
       e.preventDefault();
       const fd = new FormData(form);
@@ -135,8 +147,8 @@ export function renderFuel(el: HTMLElement): void {
       const odometer = Number(fd.get('odometer'));
 
       const selectedVeh = allVehicles.find(v => v.id === vehicleId);
-      if (selectedVeh && odometer < selectedVeh.odometer) {
-        alert(`Odometer reading cannot be lower than current vehicle odometer (${selectedVeh.odometer}km).`);
+      if (selectedVeh && odometer < Math.floor(selectedVeh.odometer)) {
+        alert(`Odometer reading cannot be lower than current vehicle odometer (${Math.round(selectedVeh.odometer)}km).`);
         return;
       }
 
