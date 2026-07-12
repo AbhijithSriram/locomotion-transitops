@@ -4,7 +4,13 @@
 
 import type { Driver, Expense, FuelLog, Location, MaintenanceLog, Trip, Vehicle } from '../types/api';
 
-export const uuid = (): string => crypto.randomUUID();
+export const uuid = (): string => {
+  if (typeof crypto !== 'undefined' && crypto.randomUUID) return crypto.randomUUID();
+  return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, (c) => {
+    const r = Math.random() * 16 | 0, v = c === 'x' ? r : (r & 0x3 | 0x8);
+    return v.toString(16);
+  });
+};
 
 const now = Date.now();
 const days = (n: number) => n * 24 * 60 * 60 * 1000;

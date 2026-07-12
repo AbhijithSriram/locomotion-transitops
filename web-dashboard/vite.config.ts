@@ -7,6 +7,7 @@ const BACKEND = 'http://localhost:8080';
 export default defineConfig({
   server: {
     port: 5173,
+    allowedHosts: ['locomotion-transitops.abhijith-sriram.in'],
     proxy: {
       '/auth': BACKEND,
       '/vehicles': BACKEND,
