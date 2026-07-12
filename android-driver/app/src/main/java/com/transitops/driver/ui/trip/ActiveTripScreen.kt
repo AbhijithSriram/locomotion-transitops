@@ -16,7 +16,11 @@ import java.util.UUID
  * StateFlows reflecting the CachedTrip from Room.
  */
 @Composable
-fun ActiveTripScreen(onLogout: () -> Unit) {
+fun ActiveTripScreen(
+    viewModel: TripViewModel,
+    onLogout: () -> Unit,
+    onNavigateToReport: () -> Unit
+) {
     // For this UI mockup, we are simulating a trip being present
     var isTripCompleted by remember { mutableStateOf(false) }
 
@@ -68,9 +72,7 @@ fun ActiveTripScreen(onLogout: () -> Unit) {
 
                 Button(
                     onClick = {
-                        // In reality, this onClick would call viewModel.completeTrip(finalOdometer = 15020)
-                        // which would write a TRIP_COMPLETE OutboxAction to Room with a UUID
-                        // val uuid = UUID.randomUUID().toString()
+                        viewModel.completeTrip(tripId = "trip-42")
                         isTripCompleted = true
                     },
                     modifier = Modifier
@@ -82,7 +84,7 @@ fun ActiveTripScreen(onLogout: () -> Unit) {
                 
                 OutlinedButton(
                     onClick = {
-                        // This would open the Incident Reporting dialog
+                        onNavigateToReport()
                     },
                     modifier = Modifier
                         .fillMaxWidth()
