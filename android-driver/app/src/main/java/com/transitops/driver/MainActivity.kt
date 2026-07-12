@@ -13,6 +13,9 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import com.transitops.driver.ui.login.LoginScreen
 import com.transitops.driver.ui.trip.ActiveTripScreen
+import androidx.lifecycle.viewmodel.compose.viewModel
+import com.transitops.driver.ui.trip.ReportScreen
+import com.transitops.driver.ui.trip.TripViewModel
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -33,7 +36,7 @@ class MainActivity : ComponentActivity() {
 
 /**
  * Main Navigation host for the Android Driver App.
- * We define two simple routes: "login" and "trip".
+ * We define three simple routes: "login", "trip", and "report".
  */
 @Composable
 fun TransitOpsApp() {
@@ -51,12 +54,28 @@ fun TransitOpsApp() {
             )
         }
         composable("trip") {
+            val tripViewModel: TripViewModel = viewModel()
             ActiveTripScreen(
+                viewModel = tripViewModel,
                 onLogout = {
                     // Navigate back to login
                     navController.navigate("login") {
                         popUpTo("trip") { inclusive = true }
                     }
+                },
+                onNavigateToReport = {
+                    navController.navigate("report")
+                }
+            )
+        }
+        composable("report") {
+            val tripViewModel: TripViewModel = viewModel()
+            ReportScreen(
+                tripId = "trip-42",
+                vehicleId = "veh-5",
+                viewModel = tripViewModel,
+                onNavigateBack = {
+                    navController.popBackStack()
                 }
             )
         }
