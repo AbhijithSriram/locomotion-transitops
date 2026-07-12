@@ -1,3 +1,5 @@
+package com.transitops.common.enums;
+
 public enum DriverStatus {
     AVAILABLE,
     ON_TRIP,

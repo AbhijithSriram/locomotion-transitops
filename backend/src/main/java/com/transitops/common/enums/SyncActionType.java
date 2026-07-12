@@ -1,3 +1,5 @@
+package com.transitops.common.enums;
+
 public enum SyncActionType {
     TRIP_COMPLETE,
     FUEL_LOG,
