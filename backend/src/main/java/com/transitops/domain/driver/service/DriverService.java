@@ -20,6 +20,8 @@ import java.util.List;
 public class DriverService {
 
     private final DriverRepository driverRepository;
+    private final com.transitops.domain.auth.repository.UserRepository userRepository;
+    private final org.springframework.security.crypto.password.PasswordEncoder passwordEncoder;
 
     @Transactional
     public DriverResponse create(DriverRequest request) {
@@ -37,6 +39,16 @@ public class DriverService {
                 .safetyScore(100)
                 .status(DriverStatus.AVAILABLE)
                 .build();
+                
+        // Auto-provision a user account for the Android app
+        String generatedEmail = request.name().toLowerCase().replaceAll("\\s+", "") + "@transitops.com";
+        com.transitops.domain.auth.entity.User user = com.transitops.domain.auth.entity.User.builder()
+                .id(driver.getId())
+                .email(generatedEmail)
+                .passwordHash(passwordEncoder.encode("driver123"))
+                .role(com.transitops.common.enums.Role.DRIVER)
+                .build();
+        userRepository.save(user);
 
         return toResponse(driverRepository.save(driver));
     }
