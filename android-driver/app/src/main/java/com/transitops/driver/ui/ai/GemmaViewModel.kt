@@ -41,7 +41,7 @@ class GemmaViewModel(application: Application) : AndroidViewModel(application) {
                 )
             } else {
                  _messages.value = listOf(
-                    ChatMessage(text = "⚠ Model not found. Please ensure the Gemma .task file is on the device.", isFromUser = false)
+                    ChatMessage(text = "Failed to extract or load the AI model from the app bundle.", isFromUser = false)
                 )
             }
         }
@@ -82,7 +82,8 @@ class GemmaViewModel(application: Application) : AndroidViewModel(application) {
         }
 
         return """
-            You are a driver assistant. Extract actions from driver messages and respond ONLY with valid JSON. Do not include markdown formatting or extra text.
+            You are a driver assistant. Extract actions from driver messages and respond ONLY with valid JSON.
+            CRITICAL: For numbers (like liters, cost, odometer), output ONLY raw digits. Do NOT include units like "liters", "kms", or "rupees" inside the JSON values.
             Available tools: FUEL_LOG, TRIP_COMPLETE, INCIDENT_REPORT, ODOMETER_UPDATE.
             Current context: $tripContext
             
@@ -96,11 +97,11 @@ class GemmaViewModel(application: Application) : AndroidViewModel(application) {
             User: "tyre burst on highway"
             Response: {"tool":"INCIDENT_REPORT","params":{"description":"tyre burst on highway","severity":"HIGH"}}
             
-            User: "odometer reading 15500"
-            Response: {"tool":"ODOMETER_UPDATE","params":{"odometer":15500}}
+            User: "filled 60 litres of diesel for 6000 rupees. odometer shows 60000 kms"
+            Response: {"tool":"FUEL_LOG","params":{"liters":60,"cost":6000,"odometer":60000}}
             
             User: "$userMessage"
-            Response:
+            Response: {
         """.trimIndent()
     }
 }

@@ -7,47 +7,55 @@ object McpToolDispatcher {
 
     fun dispatch(llmResponse: String, viewModel: TripViewModel): String {
         try {
-            // The LLM might output markdown like ```json ... ```, so let's extract just the JSON part
-            val jsonString = extractJson(llmResponse)
-            val json = JSONObject(jsonString)
-
-            if (json.has("error")) {
-                return json.getString("error")
-            }
-
-            val tool = json.optString("tool", "UNKNOWN")
-            val params = json.optJSONObject("params") ?: JSONObject()
+            // Because on-device 2B models can sometimes hallucinate JSON syntax (missing braces, 
+            // missing quotes, trailing commas), we use resilient Regex extraction instead of strict JSON parsing.
+            
+            val toolMatch = Regex("tool[\"\\s]*:[\"\\s]*([A-Za-z_]+)", RegexOption.IGNORE_CASE).find(llmResponse)
+            val tool = toolMatch?.groupValues?.get(1)?.uppercase() ?: "UNKNOWN"
 
             return when (tool) {
                 "FUEL_LOG" -> {
-                    val liters = params.optDouble("liters", Double.NaN)
-                    val cost = params.optDouble("cost", Double.NaN)
-                    val odometer = params.optDouble("odometer", Double.NaN)
+                    val litersMatch = Regex("lit[er]+s[\"\\s]*:[\"\\s]*([0-9.]+)", RegexOption.IGNORE_CASE).find(llmResponse)
+                    val costMatch = Regex("cost[\"\\s]*:[\"\\s]*([0-9.]+)", RegexOption.IGNORE_CASE).find(llmResponse)
+                    val odometerMatch = Regex("odometer[\"\\s]*:[\"\\s]*([0-9.]+)", RegexOption.IGNORE_CASE).find(llmResponse)
                     
-                    if (liters.isNaN() || cost.isNaN() || odometer.isNaN()) {
-                        return "I need the liters, cost, and odometer reading to log fuel."
+                    val liters = litersMatch?.groupValues?.get(1)?.toDoubleOrNull() ?: Double.NaN
+                    val cost = costMatch?.groupValues?.get(1)?.toDoubleOrNull() ?: Double.NaN
+                    val odometer = odometerMatch?.groupValues?.get(1)?.toDoubleOrNull() ?: Double.NaN
+                    
+                    if (liters.isNaN() || cost.isNaN()) {
+                        return "I need the liters and cost to log fuel."
                     }
                     
-                    viewModel.logFuel(liters, cost, odometer)
-                    "✓ Fuel log saved — ${liters}L at ₹${cost.toInt()}, odometer ${odometer.toInt()} km. Queued for sync."
+                    viewModel.logFuel(liters, cost)
+                    if (!odometer.isNaN()) {
+                        viewModel.updateOdometer(odometer)
+                    }
+                    "✓ Fuel log saved — ${liters}L at ₹${cost.toInt()}. Queued for sync."
                 }
                 "TRIP_COMPLETE" -> {
-                    viewModel.completeTrip()
+                    val odometerMatch = Regex("finalOdometer[\"\\s]*:[\"\\s]*([0-9.]+)", RegexOption.IGNORE_CASE).find(llmResponse)
+                    val finalOdometer = odometerMatch?.groupValues?.get(1)?.toDoubleOrNull() ?: viewModel.activeTrip.value?.vehicle?.odometer ?: 0.0
+                    viewModel.completeTrip(finalOdometer)
                     "✓ Trip marked complete! Queued for sync. Well done."
                 }
                 "INCIDENT_REPORT" -> {
-                    val description = params.optString("description", "")
-                    val severity = params.optString("severity", "MEDIUM")
+                    val descriptionMatch = Regex("description[\"\\s]*:[\"\\s]*([^\"}]+)", RegexOption.IGNORE_CASE).find(llmResponse)
+                    val severityMatch = Regex("severity[\"\\s]*:[\"\\s]*([A-Za-z]+)", RegexOption.IGNORE_CASE).find(llmResponse)
+                    
+                    val description = descriptionMatch?.groupValues?.get(1)?.trim() ?: ""
+                    val severity = severityMatch?.groupValues?.get(1)?.uppercase() ?: "MEDIUM"
                     
                     if (description.isBlank()) {
                         return "Please describe the incident so I can report it."
                     }
                     
-                    viewModel.reportIncident(description, severity)
-                    "✓ Incident reported (Severity: $severity). Queued for sync."
+                    viewModel.reportIncident(description)
+                    "✓ Incident reported. Queued for sync."
                 }
                 "ODOMETER_UPDATE" -> {
-                    val odometer = params.optDouble("odometer", Double.NaN)
+                    val odometerMatch = Regex("odometer[\"\\s]*:[\"\\s]*([0-9.]+)", RegexOption.IGNORE_CASE).find(llmResponse)
+                    val odometer = odometerMatch?.groupValues?.get(1)?.toDoubleOrNull() ?: Double.NaN
                     if (odometer.isNaN()) {
                         return "I need the odometer reading."
                     }
@@ -58,16 +66,8 @@ object McpToolDispatcher {
                 else -> "Unknown tool: $tool"
             }
         } catch (e: Exception) {
-            return "I had trouble understanding that. Please try rephrasing."
+            android.util.Log.e("McpToolDispatcher", "Error parsing LLM response. Raw response was: $llmResponse", e)
+            return "I had trouble understanding that. Please try rephrasing.\n\n(Debug: $llmResponse)"
         }
-    }
-
-    private fun extractJson(text: String): String {
-        val startIndex = text.indexOf('{')
-        val endIndex = text.lastIndexOf('}')
-        if (startIndex != -1 && endIndex != -1 && startIndex < endIndex) {
-            return text.substring(startIndex, endIndex + 1)
-        }
-        return "{}"
     }
 }

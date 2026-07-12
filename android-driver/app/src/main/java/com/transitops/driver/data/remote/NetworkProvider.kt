@@ -9,8 +9,8 @@ import java.util.concurrent.TimeUnit
 
 object NetworkProvider {
 
-    // Target the user's laptop IP Address where Spring Boot is running
-    private const val BASE_URL = "http://192.168.1.8:8080/"
+    // Target the user's custom domain over Cloudflare tunnel
+    private const val BASE_URL = "https://locomotion-transitops.abhijith-sriram.in/"
 
     // Moshi for JSON parsing
     private val moshi: Moshi by lazy {

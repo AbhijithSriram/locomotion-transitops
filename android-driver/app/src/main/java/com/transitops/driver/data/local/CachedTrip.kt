@@ -15,7 +15,7 @@ import com.transitops.driver.data.remote.VehicleType
  */
 @Entity(tableName = "cached_trips")
 data class CachedTrip(
-    @PrimaryKey val tripId: Long,
+    @PrimaryKey val tripId: String,
     val status: String,
 
     // Flattened Source Location
@@ -31,7 +31,7 @@ data class CachedTrip(
     val cargoWeightKg: Double,
 
     // Flattened Vehicle details
-    val vehicleId: Long,
+    val vehicleId: String,
     val vehicleRegNumber: String,
     val vehicleType: String,
 

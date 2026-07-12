@@ -4,3 +4,6 @@ android-driver/build/
 android-driver/app/build/
 android-driver/.idea/
 android-driver/.gradle/
+
+*.gguf
+

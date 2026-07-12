@@ -34,11 +34,11 @@ data class AuthResponse(
 
 @JsonClass(generateAdapter = true)
 data class AuthUserDto(
-    val id: Long,
+    val id: String,
     val name: String,
     val email: String,
     val role: String,
-    val driverId: Long? // only present when role == DRIVER
+    val driverId: String? // only present when role == DRIVER
 )
 
 // --- Shared Entity DTOs ---
@@ -52,7 +52,7 @@ data class LocationDto(
 
 @JsonClass(generateAdapter = true)
 data class VehicleDto(
-    val id: Long,
+    val id: String,
     val regNumber: String,
     val type: VehicleType,
     val maxLoadKg: Double,
@@ -66,7 +66,7 @@ data class VehicleDto(
  */
 @JsonClass(generateAdapter = true)
 data class ActiveTripResponse(
-    val tripId: Long,
+    val tripId: String,
     val status: TripStatus,
     val source: LocationDto,
     val destination: LocationDto,
@@ -90,7 +90,7 @@ data class SyncActionRequest(
 data class SyncActionItem(
     val idempotencyKey: String,
     val type: OutboxActionType,
-    val performedAt: Long,
+    val driverId: String,
     // The payload is passed as a raw JSON string or dynamic map, but Moshi handles Maps well.
     // For simplicity, we represent it as a generic map which Moshi serializes to JSON objects.
     val payload: Map<String, Any>
@@ -107,7 +107,7 @@ data class SyncResultResponse(
 @JsonClass(generateAdapter = true)
 data class SyncResultItem(
     val idempotencyKey: String,
-    val status: SyncResultStatus,
+    val result: String, // "applied", "conflict", or "error"
     val message: String?
 )
 

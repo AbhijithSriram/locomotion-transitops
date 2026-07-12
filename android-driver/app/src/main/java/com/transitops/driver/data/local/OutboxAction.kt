@@ -19,6 +19,9 @@ data class OutboxAction(
     // What kind of action this is (e.g., TRIP_COMPLETE, FUEL_LOG)
     val type: String,
     
+    // The ID of the driver performing the action
+    val driverId: String,
+    
     // The actual JSON payload to send to the server
     val payloadJson: String,
     

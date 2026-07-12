@@ -115,26 +115,26 @@ class TripViewModel(application: Application) : AndroidViewModel(application) {
     // Outbox actions — write locally first, trigger sync immediately when online
     // ---------------------------------------------------------------------------
 
-    fun logFuel(liters: Double, cost: Double, odometer: Double) {
+    fun logFuel(liters: Double, cost: Double) {
         val vehicleId = _activeTrip.value?.vehicle?.id ?: return
         viewModelScope.launch(Dispatchers.IO) {
-            val payload = """{"vehicleId":$vehicleId,"liters":$liters,"cost":$cost,"odometer":$odometer}"""
+            val payload = """{"vehicleId":"$vehicleId","liters":$liters,"cost":$cost}"""
             insertOutboxAction(OutboxActionType.FUEL_LOG, payload)
         }
     }
 
-    fun reportIncident(description: String, severity: String) {
+    fun reportIncident(description: String) {
         val trip = _activeTrip.value ?: return
         viewModelScope.launch(Dispatchers.IO) {
-            val payload = """{"tripId":${trip.tripId},"vehicleId":${trip.vehicle.id},"description":"$description","severity":"$severity"}"""
+            val payload = """{"tripId":"${trip.tripId}","vehicleId":"${trip.vehicle.id}","description":"$description"}"""
             insertOutboxAction(OutboxActionType.INCIDENT_REPORT, payload)
         }
     }
 
-    fun completeTrip() {
+    fun completeTrip(finalOdometer: Double) {
         val tripId = _activeTrip.value?.tripId ?: return
         viewModelScope.launch(Dispatchers.IO) {
-            val payload = """{"tripId":$tripId}"""
+            val payload = """{"tripId":"$tripId","finalOdometer":$finalOdometer}"""
             insertOutboxAction(OutboxActionType.TRIP_COMPLETE, payload)
             // Optimistically clear the local trip so UI shows "waiting for dispatch"
             _activeTrip.value = null
@@ -145,15 +145,17 @@ class TripViewModel(application: Application) : AndroidViewModel(application) {
     fun updateOdometer(odometer: Double) {
         val vehicleId = _activeTrip.value?.vehicle?.id ?: return
         viewModelScope.launch(Dispatchers.IO) {
-            val payload = """{"vehicleId":$vehicleId,"odometer":$odometer}"""
+            val payload = """{"vehicleId":"$vehicleId","odometer":$odometer}"""
             insertOutboxAction(OutboxActionType.ODOMETER_UPDATE, payload)
         }
     }
 
     private suspend fun insertOutboxAction(type: OutboxActionType, payload: String) {
+        val driverId = com.transitops.driver.data.auth.TokenProvider.driverId ?: return
         val action = OutboxAction(
             idempotencyKey = UUID.randomUUID().toString(),
             type = type.name,
+            driverId = driverId,
             payloadJson = payload,
             createdAt = System.currentTimeMillis()
         )

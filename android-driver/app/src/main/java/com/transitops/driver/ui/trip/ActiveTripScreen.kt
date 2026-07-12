@@ -283,9 +283,9 @@ fun ActiveTripScreen(
                                                 val detail = try {
                                                     val json = JSONObject(action.payloadJson)
                                                     when (action.type) {
-                                                        "FUEL_LOG" -> "${json.optDouble("liters")} L · ₹${json.optDouble("cost").toInt()} · ODO ${json.optDouble("odometer").toInt()} km"
-                                                        "INCIDENT_REPORT" -> "Severity: ${json.optString("severity")}"
-                                                        "TRIP_COMPLETE" -> "Trip #${json.optLong("tripId")}"
+                                                        "FUEL_LOG" -> "${json.optDouble("liters")} L - ₹${json.optDouble("cost").toInt()}"
+                                                        "INCIDENT_REPORT" -> json.optString("description").take(30) + "..."
+                                                        "TRIP_COMPLETE" -> "Trip #${json.optString("tripId")}"
                                                         "ODOMETER_UPDATE" -> "ODO: ${json.optDouble("odometer").toInt()} km"
                                                         else -> ""
                                                     }
@@ -309,7 +309,7 @@ fun ActiveTripScreen(
 
                         // ── Action buttons ────────────────────────────────────
                         Button(
-                            onClick = { viewModel.completeTrip() },
+                            onClick = { viewModel.completeTrip(trip.vehicle.odometer) },
                             modifier = Modifier.fillMaxWidth().height(50.dp)
                         ) {
                             Text("Complete Trip")
