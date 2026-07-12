@@ -1,8 +1,13 @@
 package com.transitops.domain.maintenance.entity;
 
-import com.transitops.common.enums.MaintenanceStatus;
-import jakarta.persistence.*;
-import lombok.*;
+import com.transitops.common.entity.AssignedIdEntity;
+import jakarta.persistence.Entity;
+import jakarta.persistence.Table;
+import lombok.AllArgsConstructor;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
+import lombok.experimental.SuperBuilder;
 
 import java.time.Instant;
 
@@ -12,25 +17,17 @@ import java.time.Instant;
 @Setter
 @NoArgsConstructor
 @AllArgsConstructor
-@Builder
-public class MaintenanceLog {
+@SuperBuilder
+public class MaintenanceLog extends AssignedIdEntity {
 
-    @Id
-    private String id;
-
-    @Column(nullable = false)
     private String vehicleId;
+    private String type;
 
-    private String description;
+    // "active" | "closed"
+    private String status;
 
     private double cost;
 
-    @Enumerated(EnumType.STRING)
-    @Column(nullable = false)
-    private MaintenanceStatus status;
-
-    @Column(nullable = false)
-    private Instant openedAt;
-
+    private Instant createdAt;
     private Instant closedAt;
 }
