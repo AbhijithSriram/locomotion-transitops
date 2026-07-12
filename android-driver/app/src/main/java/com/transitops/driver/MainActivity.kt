@@ -28,7 +28,8 @@ import java.util.concurrent.TimeUnit
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        
+        com.transitops.driver.data.auth.TokenProvider.init(applicationContext)
+
         // Schedule our SyncWorker to run every 15 minutes whenever connected to a network.
         val syncConstraints = Constraints.Builder()
             .setRequiredNetworkType(NetworkType.CONNECTED)

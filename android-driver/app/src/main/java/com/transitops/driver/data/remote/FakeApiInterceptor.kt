@@ -22,14 +22,9 @@ class FakeApiInterceptor : Interceptor {
 
         val responseJson = when {
             path.contains("/auth/login") -> {
-                """
-                {
-                  "accessToken": "fake_access_token",
-                  "refreshToken": "fake_refresh_token",
-                  "expiresInMs": 43200000,
-                  "user": { "id": "usr-7", "name": "Alex", "email": "alex@transitops.io", "role": "DRIVER", "driverId": "drv-3" }
-                }
-                """.trimIndent()
+                // Return a real network response by passing it down the OkHttp chain!
+                // This means it will actually hit 192.168.1.8:8080/auth/login
+                return chain.proceed(request)
             }
             path.contains("/driver/me/active-trip") -> {
                 """

@@ -24,8 +24,8 @@ data class RefreshRequest(
 data class AuthResponse(
     val accessToken: String,
     val refreshToken: String,
-    val expiresInMs: Long,
-    val user: UserDto
+    val role: String,
+    val email: String
 )
 
 @JsonClass(generateAdapter = true)

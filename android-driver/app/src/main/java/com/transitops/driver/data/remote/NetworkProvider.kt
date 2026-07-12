@@ -10,7 +10,7 @@ import java.util.concurrent.TimeUnit
 object NetworkProvider {
 
     // Target the user's laptop IP Address where Spring Boot is running
-    private const val BASE_URL = "http://192.168.1.8:8080/api/v1/" // Adjust api/v1/ if backend uses a different path
+    private const val BASE_URL = "http://192.168.1.8:8080/"
 
     // Moshi for JSON parsing
     private val moshi: Moshi by lazy {
@@ -23,7 +23,7 @@ object NetworkProvider {
     private val okHttpClient: OkHttpClient by lazy {
         OkHttpClient.Builder()
             .addInterceptor(FakeApiInterceptor())
-            //.addInterceptor(HttpLoggingInterceptor().apply { level = HttpLoggingInterceptor.Level.BODY })
+            .addInterceptor(AuthInterceptor { com.transitops.driver.data.auth.TokenProvider.token })
             .connectTimeout(10, TimeUnit.SECONDS)
             .readTimeout(10, TimeUnit.SECONDS)
             .build()

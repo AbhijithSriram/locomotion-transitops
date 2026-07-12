@@ -3,7 +3,7 @@ package com.transitops.driver.ui.trip
 import android.app.Application
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
-import com.transitops.driver.data.local.DatabaseProvider
+import com.transitops.driver.data.local.AppDatabase
 import com.transitops.driver.data.local.OutboxAction
 import com.transitops.driver.data.remote.OutboxActionType
 import kotlinx.coroutines.Dispatchers
@@ -20,7 +20,7 @@ import com.transitops.driver.data.sync.SyncWorker
 
 class TripViewModel(application: Application) : AndroidViewModel(application) {
 
-    private val db = DatabaseProvider.getDatabase(application)
+    private val db = AppDatabase.getDatabase(application)
     
     val outboxActions: StateFlow<List<OutboxAction>> = db.outboxDao().getActionsFlow()
         .stateIn(

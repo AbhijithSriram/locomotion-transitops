@@ -19,18 +19,30 @@ import androidx.compose.ui.platform.LocalFocusManager
  * In a real app, this would use a ViewModel to call the TransitOpsApi and save the 
  * JWT token to EncryptedSharedPreferences on success.
  */
+import androidx.lifecycle.viewmodel.compose.viewModel
+
 @Composable
-fun LoginScreen(onLoginSuccess: () -> Unit) {
-    var email by remember { mutableStateOf("") }
-    var password by remember { mutableStateOf("") }
-    var isLoading by remember { mutableStateOf(false) }
+fun LoginScreen(
+    onLoginSuccess: () -> Unit,
+    viewModel: LoginViewModel = viewModel()
+) {
+    var email by remember { mutableStateOf("admin@transitops.com") }
+    var password by remember { mutableStateOf("admin123") }
     
     val focusManager = LocalFocusManager.current
+    val uiState by viewModel.uiState.collectAsState()
     
+    val isLoading = uiState is LoginUiState.Loading
+
+    LaunchedEffect(uiState) {
+        if (uiState is LoginUiState.Success) {
+            onLoginSuccess()
+        }
+    }
+
     val doLogin = {
         if (!isLoading && email.isNotBlank() && password.isNotBlank()) {
-            isLoading = true
-            onLoginSuccess()
+            viewModel.login(email, password)
         }
     }
 
@@ -80,6 +92,15 @@ fun LoginScreen(onLoginSuccess: () -> Unit) {
             modifier = Modifier.fillMaxWidth()
         )
 
+        if (uiState is LoginUiState.Error) {
+            Spacer(modifier = Modifier.height(8.dp))
+            Text(
+                text = (uiState as LoginUiState.Error).message,
+                color = MaterialTheme.colorScheme.error,
+                style = MaterialTheme.typography.bodySmall
+            )
+        }
+
         Spacer(modifier = Modifier.height(32.dp))
 
         Button(
@@ -100,3 +121,4 @@ fun LoginScreen(onLoginSuccess: () -> Unit) {
         }
     }
 }
+
