@@ -24,3 +24,7 @@ jwt:
 logging:
   level:
     org.springframework.security: TRACE
+
+transitops:
+  seed:
+    enabled: true
