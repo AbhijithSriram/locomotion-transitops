@@ -1,8 +1,16 @@
 package com.transitops.domain.trip.entity;
 
+import com.transitops.common.entity.AssignedIdEntity;
 import com.transitops.common.enums.TripStatus;
-import jakarta.persistence.*;
-import lombok.*;
+import jakarta.persistence.Entity;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
+import jakarta.persistence.Table;
+import lombok.AllArgsConstructor;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
+import lombok.experimental.SuperBuilder;
 
 import java.time.Instant;
 
@@ -12,42 +20,24 @@ import java.time.Instant;
 @Setter
 @NoArgsConstructor
 @AllArgsConstructor
-@Builder
-public class Trip {
+@SuperBuilder
+public class Trip extends AssignedIdEntity {
 
-    @Id
-    private String id;
-
-    @Column(nullable = false)
-    private String sourceName;
-
-    private double sourceLat;
-    private double sourceLng;
-
-    @Column(nullable = false)
-    private String destinationName;
-
-    private double destinationLat;
-    private double destinationLng;
-
-    @Column(nullable = false)
+    private String source;
+    private String destination;
     private String vehicleId;
-
-    @Column(nullable = false)
     private String driverId;
 
     private double cargoWeightKg;
+    private double plannedDistanceKm;
+    private Double actualDistanceKm;
 
     @Enumerated(EnumType.STRING)
-    @Column(nullable = false)
     private TripStatus status;
 
-    @Column(columnDefinition = "TEXT")
     private String routePolyline;
 
-    @Column(nullable = false)
     private Instant createdAt;
-
     private Instant dispatchedAt;
     private Instant completedAt;
 }
