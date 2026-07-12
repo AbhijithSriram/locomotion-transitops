@@ -17,9 +17,33 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import com.transitops.driver.ui.trip.ReportScreen
 import com.transitops.driver.ui.trip.TripViewModel
 
+import androidx.work.Constraints
+import androidx.work.ExistingPeriodicWorkPolicy
+import androidx.work.NetworkType
+import androidx.work.PeriodicWorkRequestBuilder
+import androidx.work.WorkManager
+import com.transitops.driver.data.sync.SyncWorker
+import java.util.concurrent.TimeUnit
+
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        
+        // Schedule our SyncWorker to run every 15 minutes whenever connected to a network.
+        val syncConstraints = Constraints.Builder()
+            .setRequiredNetworkType(NetworkType.CONNECTED)
+            .build()
+            
+        val syncWorkRequest = PeriodicWorkRequestBuilder<SyncWorker>(15, TimeUnit.MINUTES)
+            .setConstraints(syncConstraints)
+            .build()
+            
+        WorkManager.getInstance(applicationContext).enqueueUniquePeriodicWork(
+            "OutboxSyncWork",
+            ExistingPeriodicWorkPolicy.KEEP,
+            syncWorkRequest
+        )
+        
         setContent {
             // A simple theme wrapper
             MaterialTheme {

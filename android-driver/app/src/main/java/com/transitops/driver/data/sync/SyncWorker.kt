@@ -9,6 +9,7 @@ import com.transitops.driver.data.remote.SyncActionItem
 import com.transitops.driver.data.remote.SyncActionRequest
 import com.transitops.driver.data.remote.SyncResultStatus
 import com.transitops.driver.data.remote.TransitOpsApi
+import com.transitops.driver.data.remote.NetworkProvider
 import com.squareup.moshi.Moshi
 import com.squareup.moshi.Types
 
@@ -62,24 +63,28 @@ class SyncWorker(
         val request = SyncActionRequest(actions = syncItems)
 
         return try {
-            // NOTE: In a real implementation, you'd get the TransitOpsApi from your DI container
-            // val response = api.syncActions(request)
+            val response = NetworkProvider.api.syncActions(request)
             
-            // For now, let's just simulate the success logic 
-            // If the response is successful, we mark them as synced.
-            // val results = response.body()?.results ?: emptyList()
-            
-            // Collect the idempotencyKeys of actions that were successfully applied or conflicted
-            // We consider CONFLICT as "handled" by the server, so we shouldn't keep retrying it forever.
-            // val keysToMarkSynced = results
-            //     .filter { it.status == SyncResultStatus.APPLIED || it.status == SyncResultStatus.CONFLICT }
-            //     .map { it.idempotencyKey }
-            
-            // outboxDao.markAsSynced(keysToMarkSynced)
-            
-            Result.success()
+            if (response.isSuccessful) {
+                val results = response.body()?.results ?: emptyList()
+                
+                // Collect the idempotencyKeys of actions that were successfully applied or conflicted
+                // We consider CONFLICT as "handled" by the server, so we shouldn't keep retrying it forever.
+                val keysToMarkSynced = results
+                    .filter { it.status == SyncResultStatus.APPLIED || it.status == SyncResultStatus.CONFLICT }
+                    .map { it.idempotencyKey }
+                
+                if (keysToMarkSynced.isNotEmpty()) {
+                    outboxDao.markAsSynced(keysToMarkSynced)
+                }
+                
+                Result.success()
+            } else {
+                // E.g. 404, 500, etc.
+                Result.retry()
+            }
         } catch (e: Exception) {
-            // If the network fails, we return retry so WorkManager tries again later
+            // E.g. timeout, no network
             Result.retry()
         }
     }

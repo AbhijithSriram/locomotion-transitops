@@ -46,16 +46,9 @@ class FakeApiInterceptor : Interceptor {
                 """.trimIndent()
             }
             path.contains("/sync/actions") -> {
-                // Mocking a successful APPLIED response for any incoming actions
-                // In a real mock, we would parse the request body to get the idempotencyKeys
-                // But for now, we just return a generic success.
-                """
-                {
-                  "results": [
-                    { "idempotencyKey": "mocked-uuid", "status": "APPLIED", "message": null }
-                  ]
-                }
-                """.trimIndent()
+                // Return a real network response by passing it down the OkHttp chain!
+                // This means it will actually hit 192.168.1.8:8080/sync/actions
+                return chain.proceed(request)
             }
             else -> "{}"
         }
