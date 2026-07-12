@@ -139,13 +139,15 @@ fun ReportScreen(
                     if (isFuelLog) {
                         viewModel.logFuel(
                             liters = liters.toDouble(),
-                            cost = cost.toDouble(),
-                            odometer = odometer.toDouble()
+                            cost = cost.toDouble()
                         )
+                        val odoValue = odometer.toDoubleOrNull()
+                        if (odoValue != null) {
+                            viewModel.updateOdometer(odoValue)
+                        }
                     } else {
                         viewModel.reportIncident(
-                            description = description,
-                            severity = severity
+                            description = description
                         )
                     }
                     submitted = true

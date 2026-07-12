@@ -29,6 +29,9 @@ class SyncWorker(
         // We assume ServiceLocator or similar will provide the Api instance.
         // For demonstration, we'll assume we have a singleton provider.
         
+        // Ensure TokenProvider is initialized so we have the JWT for the network call
+        com.transitops.driver.data.auth.TokenProvider.init(applicationContext)
+        
         val database = AppDatabase.getDatabase(applicationContext)
         val outboxDao = database.outboxDao()
         
@@ -51,7 +54,7 @@ class SyncWorker(
                 SyncActionItem(
                     idempotencyKey = localAction.idempotencyKey,
                     type = OutboxActionType.valueOf(localAction.type),
-                    performedAt = localAction.createdAt,
+                    driverId = localAction.driverId,
                     payload = payloadMap
                 )
             } catch (e: Exception) {
@@ -71,7 +74,7 @@ class SyncWorker(
                 // Collect the idempotencyKeys of actions that were successfully applied or conflicted
                 // We consider CONFLICT as "handled" by the server, so we shouldn't keep retrying it forever.
                 val keysToMarkSynced = results
-                    .filter { it.status == SyncResultStatus.APPLIED || it.status == SyncResultStatus.CONFLICT }
+                    .filter { it.result == "applied" || it.result == "conflict" }
                     .map { it.idempotencyKey }
                 
                 if (keysToMarkSynced.isNotEmpty()) {
@@ -81,10 +84,12 @@ class SyncWorker(
                 Result.success()
             } else {
                 // E.g. 404, 500, etc.
+                android.util.Log.e("SyncWorker", "API error: ${response.code()} ${response.errorBody()?.string()}")
                 Result.retry()
             }
         } catch (e: Exception) {
             // E.g. timeout, no network
+            android.util.Log.e("SyncWorker", "Network exception during sync", e)
             Result.retry()
         }
     }
