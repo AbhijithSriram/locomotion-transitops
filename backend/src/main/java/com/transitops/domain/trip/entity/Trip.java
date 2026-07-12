@@ -23,8 +23,17 @@ import java.time.Instant;
 @SuperBuilder
 public class Trip extends AssignedIdEntity {
 
-    private String source;
+    private String source;         // kept for backward compat / display
     private String destination;
+
+    private String sourceName;
+    private double sourceLat;
+    private double sourceLng;
+
+    private String destinationName;
+    private double destinationLat;
+    private double destinationLng;
+
     private String vehicleId;
     private String driverId;
 

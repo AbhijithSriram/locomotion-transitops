@@ -12,6 +12,7 @@ import com.transitops.domain.trip.service.DispatchService;
 import com.transitops.domain.vehicle.entity.Vehicle;
 import com.transitops.domain.vehicle.entity.VehicleHealth;
 import com.transitops.domain.vehicle.repository.VehicleRepository;
+import com.transitops.domain.maintenance.repository.MaintenanceLogRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -36,6 +37,7 @@ class DispatchServiceTest {
     @Mock private VehicleRepository vehicleRepository;
     @Mock private DriverRepository driverRepository;
     @Mock private ApplicationEventPublisher eventPublisher;
+    @Mock private MaintenanceLogRepository maintenanceLogRepository;
 
     @InjectMocks
     private DispatchService dispatchService;
@@ -204,5 +206,58 @@ class DispatchServiceTest {
         vehicle.setStatus(VehicleStatus.AVAILABLE);
         assertThatThrownBy(() -> dispatchService.markBrokenDown("v1"))
                 .isInstanceOf(ConflictException.class);
+    }
+    @Test
+    void openMaintenance_setsVehicleInShop() {
+        when(vehicleRepository.findById("v1")).thenReturn(Optional.of(vehicle));
+        when(maintenanceLogRepository.findByVehicleIdAndStatus("v1", "active")).thenReturn(Optional.empty());
+        when(maintenanceLogRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
+
+        var log = dispatchService.openMaintenance("v1", "SERVICE", 500);
+
+        assertThat(vehicle.getStatus()).isEqualTo(VehicleStatus.IN_SHOP);
+        assertThat(log.getStatus()).isEqualTo("active");
+    }
+
+    @Test
+    void openMaintenance_retiredVehicle_throwsConflict() {
+        vehicle.setStatus(VehicleStatus.RETIRED);
+        when(vehicleRepository.findById("v1")).thenReturn(Optional.of(vehicle));
+
+        assertThatThrownBy(() -> dispatchService.openMaintenance("v1", "SERVICE", 500))
+                .isInstanceOf(ConflictException.class);
+    }
+
+    @Test
+    void closeMaintenance_restoresAvailable() {
+        vehicle.setStatus(VehicleStatus.IN_SHOP);
+        var log = com.transitops.domain.maintenance.entity.MaintenanceLog.builder()
+                .id("m1").vehicleId("v1").status("active").cost(500)
+                .build();
+
+        when(maintenanceLogRepository.findById("m1")).thenReturn(Optional.of(log));
+        when(vehicleRepository.findById("v1")).thenReturn(Optional.of(vehicle));
+        when(maintenanceLogRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
+
+        var result = dispatchService.closeMaintenance("m1");
+
+        assertThat(result.getStatus()).isEqualTo("closed");
+        assertThat(vehicle.getStatus()).isEqualTo(VehicleStatus.AVAILABLE);
+    }
+
+    @Test
+    void closeMaintenance_retiredVehicle_staysRetired() {
+        vehicle.setStatus(VehicleStatus.RETIRED);
+        var log = com.transitops.domain.maintenance.entity.MaintenanceLog.builder()
+                .id("m1").vehicleId("v1").status("active").cost(500)
+                .build();
+
+        when(maintenanceLogRepository.findById("m1")).thenReturn(Optional.of(log));
+        when(vehicleRepository.findById("v1")).thenReturn(Optional.of(vehicle));
+        when(maintenanceLogRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
+
+        dispatchService.closeMaintenance("m1");
+
+        assertThat(vehicle.getStatus()).isEqualTo(VehicleStatus.RETIRED);
     }
 }

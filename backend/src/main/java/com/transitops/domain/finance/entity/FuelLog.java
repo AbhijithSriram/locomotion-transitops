@@ -1,10 +1,13 @@
 package com.transitops.domain.finance.entity;
 
-import jakarta.persistence.Column;
+import com.transitops.common.entity.AssignedIdEntity;
 import jakarta.persistence.Entity;
-import jakarta.persistence.Id;
 import jakarta.persistence.Table;
-import lombok.*;
+import lombok.AllArgsConstructor;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
+import lombok.experimental.SuperBuilder;
 
 import java.time.Instant;
 
@@ -14,23 +17,13 @@ import java.time.Instant;
 @Setter
 @NoArgsConstructor
 @AllArgsConstructor
-@Builder
-public class FuelLog {
-
-    @Id
-    private String id;
-
-    @Column(nullable = false)
+@SuperBuilder
+public class FuelLog extends AssignedIdEntity {
     private String vehicleId;
-
     private String tripId;
-
     private double liters;
-
     private double cost;
-
     private double odometer;
-
-    @Column(nullable = false)
+    private Instant date;
     private Instant loggedAt;
 }

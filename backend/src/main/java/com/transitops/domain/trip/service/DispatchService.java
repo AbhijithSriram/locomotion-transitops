@@ -12,6 +12,8 @@ import com.transitops.domain.trip.entity.Trip;
 import com.transitops.domain.trip.repository.TripRepository;
 import com.transitops.domain.vehicle.entity.Vehicle;
 import com.transitops.domain.vehicle.repository.VehicleRepository;
+import com.transitops.domain.maintenance.entity.MaintenanceLog;
+import com.transitops.domain.maintenance.repository.MaintenanceLogRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
@@ -28,6 +30,7 @@ public class DispatchService {
     private final VehicleRepository vehicleRepository;
     private final DriverRepository driverRepository;
     private final ApplicationEventPublisher eventPublisher;
+    private final MaintenanceLogRepository maintenanceLogRepository;
 
     @Transactional
     public Trip dispatch(String tripId) {
@@ -144,6 +147,56 @@ public class DispatchService {
         Trip saved = tripRepository.save(trip);
 
         eventPublisher.publishEvent(new TripStatusChanged(saved));
+    }
+    @Transactional
+    public MaintenanceLog openMaintenance(String vehicleId, String type, double cost) {
+        Vehicle vehicle = getVehicleOrThrow(vehicleId);
+
+        if (vehicle.getStatus() == VehicleStatus.RETIRED) {
+            throw new ConflictException("Cannot open maintenance on a RETIRED vehicle");
+        }
+        if (vehicle.getStatus() == VehicleStatus.ON_TRIP) {
+            throw new ConflictException("Cannot open maintenance while vehicle is ON_TRIP");
+        }
+        if (maintenanceLogRepository.findByVehicleIdAndStatus(vehicleId, "active").isPresent()) {
+            throw new ConflictException("Vehicle already has an active maintenance record");
+        }
+
+        MaintenanceLog log = MaintenanceLog.builder()
+                .id(com.transitops.common.util.Ids.newId())
+                .vehicleId(vehicleId)
+                .type(type)
+                .status("active")
+                .cost(cost)
+                .createdAt(Instant.now())
+                .build();
+
+        vehicle.setStatus(VehicleStatus.IN_SHOP);
+        vehicleRepository.save(vehicle);
+
+        return maintenanceLogRepository.save(log);
+    }
+
+    @Transactional
+    public MaintenanceLog closeMaintenance(String maintenanceLogId) {
+        MaintenanceLog log = maintenanceLogRepository.findById(maintenanceLogId)
+                .orElseThrow(() -> new NotFoundException("Maintenance log not found: " + maintenanceLogId));
+
+        if (!"active".equals(log.getStatus())) {
+            throw new ConflictException("Maintenance log is not active, was: " + log.getStatus());
+        }
+
+        Vehicle vehicle = getVehicleOrThrow(log.getVehicleId());
+
+        log.setStatus("closed");
+        log.setClosedAt(Instant.now());
+
+        if (vehicle.getStatus() != VehicleStatus.RETIRED) {
+            vehicle.setStatus(VehicleStatus.AVAILABLE);
+            vehicleRepository.save(vehicle);
+        }
+
+        return maintenanceLogRepository.save(log);
     }
 
     private Trip getTripOrThrow(String id) {
