@@ -47,7 +47,7 @@ public class VehicleService {
                 .transportMode(request.transportMode() != null ? request.transportMode() : "TRUCK")
                 .build();
 
-        vehicle.setNewEntry(true);
+        vehicle.setNew(true);
         return toResponse(vehicleRepository.save(vehicle));
     }
 

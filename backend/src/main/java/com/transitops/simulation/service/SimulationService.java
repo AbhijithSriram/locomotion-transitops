@@ -23,6 +23,7 @@ import org.springframework.stereotype.Service;
 
 import jakarta.annotation.PostConstruct;
 import java.time.Instant;
+import java.time.LocalDate;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.Executors;
@@ -398,7 +399,7 @@ public class SimulationService {
                         .toList();
 
                 List<Driver> drivers = driverRepository.findAll().stream()
-                        .filter(d -> d.getStatus() == DriverStatus.AVAILABLE && d.getLicenseExpiry().isAfter(Instant.now()))
+                        .filter(d -> d.getStatus() == DriverStatus.AVAILABLE && d.getLicenseExpiry().isAfter(java.time.LocalDate.now()))
                         .toList();
 
                 if (vehicles.isEmpty() || drivers.isEmpty()) {
@@ -479,7 +480,7 @@ public class SimulationService {
                 .toList();
 
         List<Driver> drivers = driverRepository.findAll().stream()
-                .filter(d -> d.getStatus() == DriverStatus.AVAILABLE && d.getLicenseExpiry().isAfter(Instant.now()))
+                .filter(d -> d.getStatus() == DriverStatus.AVAILABLE && d.getLicenseExpiry().isAfter(java.time.LocalDate.now()))
                 .toList();
 
         if (vehicles.isEmpty() || drivers.isEmpty()) {

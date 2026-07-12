@@ -221,7 +221,8 @@ infrastructure.
 ### `POST /sync/actions`
 
 Batched offline actions. Server processes the array **in order, each item
-independently** (no all-or-nothing). Identity comes from the bearer token.
+independently** (no all-or-nothing) — each action gets its own transaction,
+so one bad item doesn't roll back the others.
 
 Request:
 ```json
@@ -230,43 +231,45 @@ Request:
     {
       "idempotencyKey": "550e8400-e29b-41d4-a716-446655440000",
       "type": "TRIP_COMPLETE",
-      "performedAt": 1752301234567,
-      "payload": { "tripId": "trip-42", "finalOdometer": 15020, "fuelUsedLiters": 45 }
+      "driverId": "driver-9",
+      "payload": { "tripId": "trip-42", "finalOdometer": 15020, "actualDistanceKm": 95.0 }
     }
   ]
 }
 ```
 
-- `payload` is a **raw JSON object** (backend binds to `JsonNode`, stores as text) —
-  not an escaped string.
-- `performedAt` = device time the action happened, epoch **millis**.
-- `idempotencyKey` = UUID generated on-device, persisted in the Room outbox.
+- `payload` is a **raw JSON object** (backend binds to `JsonNode`, stores as text) — not an escaped string.
+- `idempotencyKey` = UUID generated on-device, persisted in the Room outbox. **Required.**
+- `driverId` — **required on every action**, not just trip/incident ones. Used as the actor reference for `FUEL_LOG` and `INCIDENT_REPORT`, and stored on the `SyncedAction` dedupe record regardless of type.
+- No `performedAt` field currently — the server stamps `processedAt` itself on receipt. If the app needs the original device timestamp preserved (e.g. for accurate fuel/incident ordering), that's not wired in yet — flag it and we'll add it as an optional payload field per type rather than a top-level one.
 
-Per-type payloads:
+Per-type payloads (as currently implemented):
 
 | `type` | `payload` |
 |---|---|
-| `TRIP_COMPLETE` | `{ "tripId": "trip-42", "finalOdometer": 15020, "fuelUsedLiters": 45 }` (`fuelUsedLiters` optional) |
-| `FUEL_LOG` | `{ "vehicleId": "veh-5", "liters": 45.5, "cost": 4200, "odometer": 15020 }` |
-| `ODOMETER_UPDATE` | `{ "vehicleId": "veh-5", "odometer": 15100 }` |
-| `INCIDENT_REPORT` | `{ "tripId": "trip-42", "vehicleId": "veh-5", "description": "...", "severity": "HIGH" }` (`tripId` optional) |
+| `TRIP_COMPLETE` | `{ "tripId": "...", "finalOdometer": 15020, "actualDistanceKm": 95.0 }` — `actualDistanceKm` optional, falls back to trip's `plannedDistanceKm` if omitted. **No `fuelUsedLiters` here** — log fuel separately via a `FUEL_LOG` action. |
+| `FUEL_LOG` | `{ "vehicleId": "...", "liters": 45.5, "cost": 4200, "date": "2026-07-12T10:00:00Z" }` — `date` optional (ISO-8601 string), defaults to server receipt time if omitted. **No `odometer` field on this payload** — use a separate `ODOMETER_UPDATE` action if the odometer needs updating alongside a fuel log. |
+| `ODOMETER_UPDATE` | `{ "vehicleId": "...", "odometer": 15100 }` |
+| `INCIDENT_REPORT` | `{ "vehicleId": "...", "tripId": "...", "description": "..." }` — `tripId` optional. **No `severity` field currently** — not modeled on `IncidentReport` yet. If you need it for dashboard triage, tell us and we'll add it. |
 
 Response `200` (always 200; per-item outcomes inside):
 ```json
 {
   "results": [
-    { "idempotencyKey": "550e8400-...", "status": "APPLIED", "message": null }
+    { "idempotencyKey": "550e8400-...", "result": "applied", "message": null }
   ]
 }
 ```
 
-- `status` ∈ `APPLIED | CONFLICT | ERROR`.
-- Duplicate `idempotencyKey` (already applied earlier) → `APPLIED` again.
-- `CONFLICT` example: `TRIP_COMPLETE` arrives for a trip the dispatcher meanwhile
-  `CANCELLED` → server keeps `CANCELLED`, returns
-  `{ "status": "CONFLICT", "message": "Trip 42 was cancelled by dispatcher" }`,
-  app discards local state and shows the message.
-- `ERROR` = malformed payload / unknown entity; app may drop the action after showing it.
+- Field is `result`, not `status`.
+- Values are **lowercase**: `applied | conflict | error` (not `APPLIED`/`CONFLICT`/`ERROR`).
+- Duplicate `idempotencyKey` (already applied earlier) → `applied` again, no-op, no duplicate row written.
+- `conflict` example: `TRIP_COMPLETE` arrives for a trip the dispatcher meanwhile moved out of `DISPATCHED` (e.g. cancelled) → server leaves it as-is, returns `{ "result": "conflict", "message": "Trip is CANCELLED, expected DISPATCHED" }`. Same pattern for `ODOMETER_UPDATE` if the submitted value is behind the server's current odometer.
+- `error` = malformed/missing payload field or unknown `type`. `message` carries the exception text. App may drop the action after showing it — these are **not** persisted as `SyncedAction`, so an `error` result is safe to retry after the app fixes the payload (won't be treated as a duplicate).
+
+**Append-only vs server-authoritative** (unchanged from original design):
+- `FUEL_LOG`, `INCIDENT_REPORT` — always merge, always `applied` (barring malformed payload).
+- `TRIP_COMPLETE`, `ODOMETER_UPDATE` — server-authoritative, can return `conflict`.
 
 ---
 
